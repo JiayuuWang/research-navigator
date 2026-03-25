@@ -1,0 +1,17 @@
+packages:
+  "framer-motion": "For smooth tab transitions and polished list reveals"
+  "recharts": "For the trend analysis data visualizations"
+  "clsx": "For conditional class names"
+  "tailwind-merge": "For merging tailwind classes safely"
+  "date-fns": "For formatting dates in the debate and report views"
+  "react-force-graph-2d": "For the interactive citation network graph"
+
+images:
+  - path: "artifacts/web-app/public/images/abstract-grid.png"
+    description: "Dark, moody, sci-fi precision tool background. Extremely subtle, dark gray on black glowing dot grid, reminiscent of a radar or intelligence dashboard. Monochromatic with very faint cyan/teal light leaks."
+    aspect_ratio: "16:9"
+
+notes:
+  - Using react-force-graph-2d for network visualization.
+  - The entire app is styled as a forced dark-mode precision tool to match the scientific intelligence aesthetic.
+  - API requests use the generated hooks from @workspace/api-client-react.

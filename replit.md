@@ -1,96 +1,125 @@
-# Workspace
+# Research Navigator (研究领域导航器)
 
-## Overview
+A comprehensive scientific intelligence platform that takes a research topic as input and produces:
+- Paper collection from multiple public APIs (Semantic Scholar + OpenAlex)
+- Citation graph visualization (interactive network)
+- Trend analysis with AI narratives
+- Research gap identification with proposal generation
+- Multi-perspective controversy debate analysis
+- Integrated exportable reports
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+## Architecture
 
-## Stack
+### Monorepo Structure (pnpm workspaces)
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+```
+artifacts/
+  api-server/       # Express.js REST API backend (port from $PORT, runs on 8080 in dev)
+  web-app/          # React + Vite frontend (/, Shadcn UI, TanStack Query)
+  mockup-sandbox/   # Vite component preview server for canvas prototyping
 
-## Structure
+lib/
+  db/               # Drizzle ORM schema + PostgreSQL migrations
+  api-spec/         # OpenAPI 3.0 spec + codegen (orval)
+  api-zod/          # Generated Zod schemas from OpenAPI
+  api-client-react/ # Generated React Query hooks from OpenAPI
+  integrations-openai-ai-server/  # OpenAI client (Replit AI Integrations proxy)
+  integrations-openai-ai-react/   # React audio hooks for OpenAI
 
-```text
-artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+scripts/
+  src/collect.ts    # CLI data collection script
 ```
 
-## TypeScript & Composite Projects
+### Database (PostgreSQL via Drizzle ORM)
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+Tables:
+- `papers` — collected papers with metadata (DOI, abstract, year, citations, etc.)
+- `authors` — paper authors
+- `paper_authors` — paper-author junction
+- `citations` — citation relationships between papers
+- `collection_runs` — tracks collection job status
+- `topics` / `clusters` / `paper_topics` — thematic clustering
+- `keyword_trends` — computed keyword trend data over years
+- `research_gaps` — AI-identified research gaps with scores
+- `research_proposals` — generated research proposals for gaps
+- `debate_sessions` — multi-perspective debate sessions
+- `debate_turns` — individual debate turns per role
+- `conversations` / `messages` — chat session storage
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+### API Routes (all under `/api`)
 
-## Root Scripts
+- `GET /api/healthz` — health check
+- `GET /api/papers` — list papers with filters
+- `GET /api/papers/:id` — paper detail
+- `GET/POST /api/collection/runs` — list/create collection runs
+- `GET /api/collection/runs/:id` — get run status
+- `GET /api/graph/seed/:paperId` — build citation graph from seed paper
+- `GET /api/graph/paper/:paperId/summary` — AI paper summary
+- `POST /api/trends/:runId/compute` — compute keyword trends
+- `GET /api/trends/:runId` — get trends data
+- `GET /api/trends/:runId/narrative` — AI trend narrative
+- `POST /api/gaps/:runId/analyze` — run gap analysis
+- `GET /api/gaps/:runId` — get research gaps
+- `POST /api/proposals/:runId/generate` — generate proposals
+- `GET /api/proposals/:runId` — get proposals
+- `POST /api/debates/:runId/start` — start structured debate (async, ~2-3 min)
+- `GET /api/debates/:runId` — get debate sessions
+- `GET /api/debates/sessions/:sessionId/turns` — get debate turns
+- `POST /api/report/:runId/generate` — generate comprehensive report
+- `GET /api/report/:runId` — get report
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+### Data Sources
 
-## Packages
+- **Semantic Scholar API** — rate limited to 1100ms between requests, pagination support
+- **OpenAlex API** — rate limited to 500ms, mailto param required, cursor pagination
 
-### `artifacts/api-server` (`@workspace/api-server`)
+### AI Integration
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+Uses Replit AI Integrations (OpenAI proxy) — no user API key required:
+- `AI_INTEGRATIONS_OPENAI_BASE_URL` — auto-set by Replit
+- `AI_INTEGRATIONS_OPENAI_API_KEY` — auto-set by Replit
+- Model: `gpt-5.2` for all AI features
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+### UI Style
 
-### `lib/db` (`@workspace/db`)
+Dark mode, professional scientific tool aesthetic. Modeled after high-precision data tools (dense layout, monospace accents, sharp contrast). Uses Shadcn UI components with Tailwind CSS.
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
+## Development
 
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
+```bash
+# Install all dependencies
+pnpm install
 
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
+# Run API server (dev)
+pnpm --filter @workspace/api-server run dev
 
-### `lib/api-spec` (`@workspace/api-spec`)
+# Run frontend (dev)  
+pnpm --filter @workspace/web-app run dev
 
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
+# Run collection CLI
+pnpm --filter @workspace/scripts run collect -- --topic "transformer attention" --limit 200
 
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
+# Push DB migrations
+pnpm --filter @workspace/db run push
 
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
+# Typecheck all libs
+pnpm run typecheck:libs
 
-### `lib/api-zod` (`@workspace/api-zod`)
+# Typecheck API server
+pnpm --filter @workspace/api-server exec tsc -p tsconfig.json --noEmit
+```
 
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
+## Key Technical Decisions
 
-### `lib/api-client-react` (`@workspace/api-client-react`)
+1. **Collection pipeline is async** — POST to start a run returns immediately, frontend polls for status
+2. **Deduplication** — by DOI first, then normalized title (handles cross-source duplicates)
+3. **All AI analysis** — done server-side using OpenAI batch API for parallel processing
+4. **Citation graph** — BFS traversal up to 3 levels deep, max 300 nodes, real-time computed
+5. **Debate format** — 4 roles × 3 rounds = 12 turns, generates final synthesis report
 
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
+## Environment Variables
 
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+- `DATABASE_URL` — PostgreSQL connection string (auto-provisioned by Replit)
+- `AI_INTEGRATIONS_OPENAI_BASE_URL` — OpenAI proxy base URL (auto-set)
+- `AI_INTEGRATIONS_OPENAI_API_KEY` — OpenAI proxy key (auto-set)
+- `PORT` — Server port (auto-assigned by Replit)
