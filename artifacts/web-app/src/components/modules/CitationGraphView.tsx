@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useGetCitationGraph, useGetPaperAiSummary, useListPapers } from "@workspace/api-client-react";
+import { useGetCitationGraph, useGetPaperAiSummary, useListPapers, getGetCitationGraphQueryKey } from "@workspace/api-client-react";
 import ForceGraph2D from "react-force-graph-2d";
 import { Card, Skeleton, Badge, Button } from "@/components/ui";
 import { Network, Search, Zap, Loader2 } from "lucide-react";
@@ -66,10 +66,11 @@ export function CitationGraphView({ topic }: { topic: string }) {
   const { data: papersData } = useListPapers({ topic, limit: 1, sortBy: "citationCount" });
   const seedId = papersData?.papers[0]?.id;
 
+  const graphParams = { depth: 2, maxNodes: 150 };
   const { data: graphData, isLoading } = useGetCitationGraph(
     seedId || "",
-    { depth: 2, maxNodes: 150 },
-    { query: { enabled: !!seedId } }
+    graphParams,
+    { query: { queryKey: getGetCitationGraphQueryKey(seedId || "", graphParams), enabled: !!seedId } }
   );
 
   const [selectedNode, setSelectedNode] = useState<string | null>(null);

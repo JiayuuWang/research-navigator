@@ -2,7 +2,7 @@ import React from "react";
 import { useGetTrends, useComputeTrends } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from "@/components/ui";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { Activity, Play, TrendingUp } from "lucide-react";
+import { Activity, Play, TrendingUp, Zap } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function TrendAnalysisView({ runId }: { runId: string }) {
@@ -36,7 +36,7 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
 
   // Prepare chart data: Merge dataPoints from top keywords by year
   const yearsSet = new Set<number>();
-  data.keywordTrends.forEach(kt => kw.dataPoints.forEach(dp => yearsSet.add(dp.year)));
+  data.keywordTrends.forEach(kt => kt.dataPoints.forEach(dp => yearsSet.add(dp.year)));
   const years = Array.from(yearsSet).sort();
 
   const chartData = years.map(year => {

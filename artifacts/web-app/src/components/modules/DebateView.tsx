@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useGetDebates, useStartDebate, useGetDebateTurns } from "@workspace/api-client-react";
-import { Card, Button, Badge, Skeleton } from "@/components/ui";
+import { Card, CardHeader, CardContent, Button, Badge, Skeleton } from "@/components/ui";
 import { MessageSquare, Play, ShieldAlert, CheckCircle2, XCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";

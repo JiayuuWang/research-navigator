@@ -128,7 +128,7 @@ router.get("/seed/:paperId", async (req, res) => {
       const curr = bfsQ.shift()!;
       const currDepth = depthMap.get(curr) ?? 0;
       for (const e of edges) {
-        const neighbor = e.source === curr ? e.target : e.source === curr ? e.target : null;
+        const neighbor = e.source === curr ? e.target : e.target === curr ? e.source : null;
         if (neighbor && !depthMap.has(neighbor)) {
           depthMap.set(neighbor, currDepth + 1);
           bfsQ.push(neighbor);

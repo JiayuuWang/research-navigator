@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useGetCollectionRun } from "@workspace/api-client-react";
 import { Tabs, Progress, Badge } from "@/components/ui";
@@ -27,14 +27,15 @@ export default function Dashboard() {
   const id = params.id as string;
   const [activeTab, setActiveTab] = useState(TABS[0].id);
 
-  const { data: run, isLoading, error } = useGetCollectionRun(id, {
-    query: { 
-      refetchInterval: (query) => {
-        const status = query.state.data?.status;
-        return status === 'pending' || status === 'running' ? 3000 : false;
-      }
+  const { data: run, isLoading, error, refetch } = useGetCollectionRun(id);
+
+  useEffect(() => {
+    if (run?.status === 'pending' || run?.status === 'running') {
+      const interval = setInterval(() => refetch(), 3000);
+      return () => clearInterval(interval);
     }
-  });
+    return undefined;
+  }, [run?.status, refetch]);
 
   if (isLoading && !run) {
     return (
