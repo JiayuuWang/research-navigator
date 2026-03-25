@@ -114,8 +114,13 @@ pnpm --filter @workspace/api-server exec tsc -p tsconfig.json --noEmit
 1. **Collection pipeline is async** — POST to start a run returns immediately, frontend polls for status
 2. **Deduplication** — by DOI first, then normalized title (handles cross-source duplicates)
 3. **All AI analysis** — done server-side using OpenAI batch API for parallel processing
-4. **Citation graph** — BFS traversal up to 3 levels deep, max 300 nodes, real-time computed
-5. **Debate format** — 4 roles × 3 rounds = 12 turns, generates final synthesis report
+4. **Citation graph** — BFS traversal up to 3 levels deep, max 300 nodes, custom canvas glow for hub nodes
+5. **Debate format** — 4 roles × 3 rounds = 12 turns, generates final synthesis report with consensus/disagreement
+6. **Research gaps** — AI generates 5 distinct gaps scored by novelty/impact/feasibility; expandable cards with evidence
+7. **Proposals** — generated per gap using GPT, with research questions, methodology, contributions, challenges
+8. **TopAuthor schema** — flat `{id, name, paperCount, citationCount, hIndex, affiliations}` (not nested Author)
+9. **Markdown export** — report exported as `.md` file via client-side Blob download
+10. **PapersList** — accepts `runId` to scope papers to a specific collection run (via `/api/papers?runId=...`)
 
 ## Environment Variables
 
