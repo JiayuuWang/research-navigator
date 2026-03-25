@@ -840,6 +840,20 @@ components:
         - citationCount
         - affiliations
 
+    TopInstitution:
+      type: object
+      properties:
+        institution:
+          type: string
+        paperCount:
+          type: integer
+        citationCount:
+          type: integer
+      required:
+        - institution
+        - paperCount
+        - citationCount
+
     PaperCluster:
       type: object
       properties:
@@ -880,6 +894,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TopAuthor"
+        topInstitutions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopInstitution"
         clusters:
           type: array
           items:
@@ -893,6 +911,7 @@ components:
         - topic
         - keywordTrends
         - topAuthors
+        - topInstitutions
         - clusters
         - narrativeSummary
         - totalPapersAnalyzed

@@ -158,6 +158,12 @@ export interface TopAuthor {
   affiliations: string[];
 }
 
+export interface TopInstitution {
+  institution: string;
+  paperCount: number;
+  citationCount: number;
+}
+
 export interface PaperCluster {
   id: string;
   label: string;
@@ -172,6 +178,7 @@ export interface TrendAnalysis {
   topic: string;
   keywordTrends: KeywordTrend[];
   topAuthors: TopAuthor[];
+  topInstitutions: TopInstitution[];
   clusters: PaperCluster[];
   narrativeSummary: string;
   totalPapersAnalyzed: number;

@@ -301,6 +301,13 @@ export const GetTrendsResponse = zod.object({
       affiliations: zod.array(zod.string()),
     }),
   ),
+  topInstitutions: zod.array(
+    zod.object({
+      institution: zod.string(),
+      paperCount: zod.number(),
+      citationCount: zod.number(),
+    }),
+  ),
   clusters: zod.array(
     zod.object({
       id: zod.string(),
@@ -347,6 +354,13 @@ export const ComputeTrendsResponse = zod.object({
       citationCount: zod.number(),
       hIndex: zod.number().nullable().optional(),
       affiliations: zod.array(zod.string()),
+    }),
+  ),
+  topInstitutions: zod.array(
+    zod.object({
+      institution: zod.string(),
+      paperCount: zod.number(),
+      citationCount: zod.number(),
     }),
   ),
   clusters: zod.array(

@@ -5,7 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Legend, ScatterChart, Scatter, ZAxis, Cell,
 } from "recharts";
-import { Activity, Play, TrendingUp, Zap, Users, Layers } from "lucide-react";
+import { Activity, Play, TrendingUp, Zap, Users, Layers, Building2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 const TREND_COLORS = [
@@ -93,6 +93,16 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
       paperCount: a.paperCount,
       citationCount: a.citationCount,
       hIndex: a.hIndex ?? 0,
+    }));
+  }, [data]);
+
+  const institutionChartData = useMemo(() => {
+    if (!data?.topInstitutions?.length) return [];
+    return data.topInstitutions.slice(0, 10).map((inst) => ({
+      name: inst.institution.length > 28 ? inst.institution.substring(0, 28) + "…" : inst.institution,
+      fullName: inst.institution,
+      paperCount: inst.paperCount,
+      citationCount: inst.citationCount,
     }));
   }, [data]);
 
@@ -312,6 +322,62 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Row 3: Institution Rankings */}
+      <Card className="border-border/50 bg-black/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xs font-mono text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+            <Building2 className="w-3.5 h-3.5" /> Institution Rankings
+            <span className="text-muted-foreground/60 font-normal normal-case tracking-normal ml-1">
+              (by paper count in corpus)
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {institutionChartData.length > 0 ? (
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={institutionChartData} layout="vertical" margin={{ left: 10, right: 30 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border)/0.4)" horizontal={false} />
+                  <XAxis
+                    type="number"
+                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fontSize: 10, fontFamily: "monospace" }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={180}
+                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fontSize: 10, fontFamily: "monospace" }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      borderColor: "hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontFamily: "monospace",
+                      fontSize: "11px",
+                    }}
+                    formatter={(value: number, name: string) => [value, name === "paperCount" ? "Papers" : "Citations"]}
+                    labelFormatter={(label) => institutionChartData.find((i) => i.name === label)?.fullName ?? label}
+                  />
+                  <Legend wrapperStyle={{ fontSize: "11px", fontFamily: "monospace" }} />
+                  <Bar dataKey="paperCount" name="Papers" fill="hsl(210,90%,60%)" radius={[0, 3, 3, 0]} maxBarSize={22} />
+                  <Bar dataKey="citationCount" name="Citations" fill="hsl(45,90%,50%)" radius={[0, 3, 3, 0]} maxBarSize={22} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm text-center px-4">
+              <div>
+                <Building2 className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                No institution affiliation data available. Affiliations are sourced from author metadata.
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Row 3: Growth ranking table */}
       {data.keywordTrends.length > 0 && (
