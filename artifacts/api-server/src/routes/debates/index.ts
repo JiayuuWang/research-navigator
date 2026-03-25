@@ -9,6 +9,9 @@ import {
 import { eq, desc } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { randomUUID } from "crypto";
+import { z } from "zod";
+
+const RunIdParamsSchema = z.object({ runId: z.string().uuid() });
 
 const router: IRouter = Router();
 
@@ -63,7 +66,12 @@ router.get("/:runId", async (req, res) => {
 // POST /debates/:runId/start
 router.post("/:runId/start", async (req, res) => {
   try {
-    const { runId } = req.params;
+    const paramsParsed = RunIdParamsSchema.safeParse(req.params);
+    if (!paramsParsed.success) {
+      res.status(400).json({ error: "Invalid runId", details: paramsParsed.error.flatten() });
+      return;
+    }
+    const { runId } = paramsParsed.data;
 
     const [run] = await db.select().from(collectionRunsTable).where(eq(collectionRunsTable.id, runId!)).limit(1);
     if (!run) {
@@ -71,7 +79,9 @@ router.post("/:runId/start", async (req, res) => {
       return;
     }
 
-    const papers = await db.select().from(papersTable).limit(300);
+    const papers = await db.select().from(papersTable)
+      .where(eq(papersTable.collectionRunId, runId!))
+      .limit(300);
 
     // Identify controversial topic using GPT
     const paperTitles = papers.slice(0, 30).map((p) => `"${p.title}"`).join(", ");

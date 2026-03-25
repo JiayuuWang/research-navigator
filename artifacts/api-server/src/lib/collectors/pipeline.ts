@@ -63,7 +63,7 @@ async function deduplicatePapers(papers: CollectedPaper[]): Promise<{
   return { unique, duplicates };
 }
 
-async function persistPaper(paper: CollectedPaper): Promise<boolean> {
+async function persistPaper(paper: CollectedPaper, runId?: string): Promise<boolean> {
   try {
     // Check if already exists
     const existing = await db
@@ -105,6 +105,7 @@ async function persistPaper(paper: CollectedPaper): Promise<boolean> {
       url: paper.url,
       pdfUrl: paper.pdfUrl,
       source: paper.source,
+      collectionRunId: runId ?? null,
     }).onConflictDoNothing();
 
     // Persist authors
@@ -200,7 +201,7 @@ export async function runCollectionPipeline(
     let skipped = 0;
 
     for (const paper of unique) {
-      const saved = await persistPaper(paper);
+      const saved = await persistPaper(paper, runId);
       if (saved) {
         persisted++;
       } else {

@@ -24,6 +24,7 @@ export const papersTable = pgTable(
     url: text("url"),
     pdfUrl: text("pdf_url"),
     source: text("source").notNull(),
+    collectionRunId: text("collection_run_id"),
     isIncremental: boolean("is_incremental").default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -32,6 +33,7 @@ export const papersTable = pgTable(
     index("papers_year_idx").on(table.year),
     index("papers_citation_count_idx").on(table.citationCount),
     index("papers_source_idx").on(table.source),
+    index("papers_collection_run_id_idx").on(table.collectionRunId),
   ]
 );
 

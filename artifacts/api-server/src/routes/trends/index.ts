@@ -135,8 +135,10 @@ router.post("/:runId/compute", async (req, res) => {
       return;
     }
 
-    // Get all papers
-    const papers = await db.select().from(papersTable).limit(1000);
+    // Get papers for this run
+    const papers = await db.select().from(papersTable)
+      .where(eq(papersTable.collectionRunId, runId!))
+      .limit(1000);
 
     if (papers.length === 0) {
       res.json({

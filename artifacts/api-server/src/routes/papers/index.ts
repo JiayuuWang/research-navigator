@@ -2,16 +2,27 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { papersTable, authorsTable, paperAuthorsTable } from "@workspace/db";
 import { eq, desc, asc, sql, and, gte, lte } from "drizzle-orm";
+import { z } from "zod";
+
+const ListPapersQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(500).optional().default(50),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+  sortBy: z.enum(["citationCount", "year", "title", "influentialCitationCount"]).optional().default("citationCount"),
+  year: z.coerce.number().int().optional(),
+  topic: z.string().optional(),
+});
 
 const router: IRouter = Router();
 
 // GET /papers
 router.get("/", async (req, res) => {
   try {
-    const limit = Number(req.query["limit"] ?? 50);
-    const offset = Number(req.query["offset"] ?? 0);
-    const sortBy = (req.query["sortBy"] as string) ?? "citationCount";
-    const year = req.query["year"] ? Number(req.query["year"]) : undefined;
+    const parsed = ListPapersQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid query parameters", details: parsed.error.flatten() });
+      return;
+    }
+    const { limit, offset, sortBy, year } = parsed.data;
 
     const conditions = [];
     if (year) {
@@ -19,8 +30,10 @@ router.get("/", async (req, res) => {
     }
 
     let orderCol;
-    if (sortBy === "publicationDate" || sortBy === "year") {
+    if (sortBy === "year") {
       orderCol = desc(papersTable.year);
+    } else if (sortBy === "title") {
+      orderCol = asc(papersTable.title);
     } else {
       orderCol = desc(papersTable.citationCount);
     }

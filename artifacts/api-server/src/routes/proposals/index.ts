@@ -55,7 +55,9 @@ router.post("/:runId/generate", async (req, res) => {
       return;
     }
 
-    const papers = await db.select().from(papersTable).limit(200);
+    const papers = await db.select().from(papersTable)
+      .where(eq(papersTable.collectionRunId, runId!))
+      .limit(200);
     const paperIndex = new Map(papers.map((p) => [p.id, p]));
 
     // Clear existing proposals

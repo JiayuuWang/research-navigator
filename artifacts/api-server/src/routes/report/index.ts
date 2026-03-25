@@ -23,7 +23,9 @@ router.get("/:runId", async (req, res) => {
       return;
     }
 
-    const papers = await db.select().from(papersTable).limit(50);
+    const papers = await db.select().from(papersTable)
+      .where(eq(papersTable.collectionRunId, runId!))
+      .limit(50);
     const proposals = await db.select().from(researchProposalsTable).where(eq(researchProposalsTable.collectionRunId, runId!)).limit(5);
     const debates = await db.select().from(debateSessionsTable).where(eq(debateSessionsTable.collectionRunId, runId!)).limit(1);
     const trends = await db.select().from(keywordTrendsTable).where(eq(keywordTrendsTable.collectionRunId, runId!)).limit(20);
@@ -64,7 +66,9 @@ router.post("/:runId/generate", async (req, res) => {
       return;
     }
 
-    const papers = await db.select().from(papersTable).limit(100);
+    const papers = await db.select().from(papersTable)
+      .where(eq(papersTable.collectionRunId, runId!))
+      .limit(100);
     const proposals = await db.select().from(researchProposalsTable).where(eq(researchProposalsTable.collectionRunId, runId!)).limit(5);
     const debates = await db.select().from(debateSessionsTable).where(eq(debateSessionsTable.collectionRunId, runId!)).limit(1);
     const trends = await db.select().from(keywordTrendsTable).where(eq(keywordTrendsTable.collectionRunId, runId!)).limit(20);
