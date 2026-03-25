@@ -1,0 +1,100 @@
+import { Router, type IRouter } from "express";
+import { db } from "@workspace/db";
+import { papersTable, authorsTable, paperAuthorsTable } from "@workspace/db";
+import { eq, desc, asc, sql, and, gte, lte } from "drizzle-orm";
+
+const router: IRouter = Router();
+
+// GET /papers
+router.get("/", async (req, res) => {
+  try {
+    const limit = Number(req.query["limit"] ?? 50);
+    const offset = Number(req.query["offset"] ?? 0);
+    const sortBy = (req.query["sortBy"] as string) ?? "citationCount";
+    const year = req.query["year"] ? Number(req.query["year"]) : undefined;
+
+    const conditions = [];
+    if (year) {
+      conditions.push(eq(papersTable.year, year));
+    }
+
+    let orderCol;
+    if (sortBy === "publicationDate" || sortBy === "year") {
+      orderCol = desc(papersTable.year);
+    } else {
+      orderCol = desc(papersTable.citationCount);
+    }
+
+    const papers = await db
+      .select()
+      .from(papersTable)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(orderCol)
+      .limit(limit)
+      .offset(offset);
+
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(papersTable)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+    res.json({
+      papers: papers.map((p) => ({
+        ...p,
+        citationCount: p.citationCount ?? 0,
+        influentialCitationCount: p.influentialCitationCount ?? 0,
+        keywords: p.keywords ?? [],
+      })),
+      total: Number(count),
+      limit,
+      offset,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to list papers" });
+  }
+});
+
+// GET /papers/:id
+router.get("/:id", async (req, res) => {
+  try {
+    const [paper] = await db
+      .select()
+      .from(papersTable)
+      .where(eq(papersTable.id, req.params.id!))
+      .limit(1);
+
+    if (!paper) {
+      res.status(404).json({ error: "Paper not found" });
+      return;
+    }
+
+    // Get authors
+    const authorRows = await db
+      .select({ author: authorsTable })
+      .from(paperAuthorsTable)
+      .innerJoin(authorsTable, eq(paperAuthorsTable.authorId, authorsTable.id))
+      .where(eq(paperAuthorsTable.paperId, paper.id))
+      .orderBy(asc(paperAuthorsTable.position));
+
+    res.json({
+      ...paper,
+      citationCount: paper.citationCount ?? 0,
+      influentialCitationCount: paper.influentialCitationCount ?? 0,
+      keywords: paper.keywords ?? [],
+      authors: authorRows.map((r) => ({
+        id: r.author.id,
+        name: r.author.name,
+        affiliations: r.author.affiliations ?? [],
+        citationCount: r.author.citationCount ?? 0,
+        paperCount: r.author.paperCount ?? 0,
+        hIndex: r.author.hIndex ?? 0,
+      })),
+      references: [],
+      citations: [],
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get paper" });
+  }
+});
+
+export default router;

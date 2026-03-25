@@ -3,13 +3,29 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Research Navigator API - Comprehensive scientific intelligence platform
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: papers
+    description: Paper collection and search
+  - name: collection
+    description: Data collection pipeline
+  - name: graph
+    description: Citation graph operations
+  - name: trends
+    description: Trend analysis
+  - name: gaps
+    description: Research gap identification
+  - name: proposals
+    description: Research proposal generation
+  - name: debates
+    description: Controversy debate analysis
+  - name: report
+    description: Comprehensive report generation
 paths:
   /healthz:
     get:
@@ -24,6 +40,434 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /papers:
+    get:
+      operationId: listPapers
+      tags: [papers]
+      summary: List collected papers
+      parameters:
+        - name: topic
+          in: query
+          schema:
+            type: string
+        - name: year
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [citationCount, publicationDate, year]
+            default: citationCount
+      responses:
+        "200":
+          description: List of papers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperListResponse"
+
+  /papers/{id}:
+    get:
+      operationId: getPaper
+      tags: [papers]
+      summary: Get paper by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paper details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperDetail"
+        "404":
+          description: Paper not found
+
+  /collection/runs:
+    get:
+      operationId: listCollectionRuns
+      tags: [collection]
+      summary: List all collection runs
+      responses:
+        "200":
+          description: List of collection runs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CollectionRun"
+                required:
+                  - runs
+
+    post:
+      operationId: startCollection
+      tags: [collection]
+      summary: Start a new data collection run
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartCollectionRequest"
+      responses:
+        "201":
+          description: Collection started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionRun"
+
+  /collection/runs/{id}:
+    get:
+      operationId: getCollectionRun
+      tags: [collection]
+      summary: Get collection run status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Collection run details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionRun"
+        "404":
+          description: Run not found
+
+  /graph/seed/{paperId}:
+    get:
+      operationId: getCitationGraph
+      tags: [graph]
+      summary: Get citation graph from seed paper
+      parameters:
+        - name: paperId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: depth
+          in: query
+          schema:
+            type: integer
+            default: 2
+            minimum: 1
+            maximum: 3
+        - name: maxNodes
+          in: query
+          schema:
+            type: integer
+            default: 200
+      responses:
+        "200":
+          description: Citation graph data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CitationGraph"
+        "404":
+          description: Paper not found
+
+  /graph/paper/{paperId}/summary:
+    get:
+      operationId: getPaperAiSummary
+      tags: [graph]
+      summary: Get AI-generated summary for a paper
+      parameters:
+        - name: paperId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: AI paper summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperSummary"
+
+  /trends/{runId}:
+    get:
+      operationId: getTrends
+      tags: [trends]
+      summary: Get trend analysis for a collection run
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Trend analysis results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrendAnalysis"
+
+  /trends/{runId}/compute:
+    post:
+      operationId: computeTrends
+      tags: [trends]
+      summary: Compute trend analysis for a collection run
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Trend analysis computed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrendAnalysis"
+
+  /gaps/{runId}:
+    get:
+      operationId: getResearchGaps
+      tags: [gaps]
+      summary: Get identified research gaps
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Research gaps
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gaps:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ResearchGap"
+                required:
+                  - gaps
+
+  /gaps/{runId}/analyze:
+    post:
+      operationId: analyzeResearchGaps
+      tags: [gaps]
+      summary: Analyze research gaps for a collection run
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Analysis started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gaps:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ResearchGap"
+                  message:
+                    type: string
+                required:
+                  - gaps
+                  - message
+
+  /proposals/{runId}:
+    get:
+      operationId: getProposals
+      tags: [proposals]
+      summary: Get research proposals for a run
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Research proposals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proposals:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ResearchProposal"
+                required:
+                  - proposals
+
+  /proposals/{runId}/generate:
+    post:
+      operationId: generateProposals
+      tags: [proposals]
+      summary: Generate research proposals from identified gaps
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Proposals generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proposals:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ResearchProposal"
+                  message:
+                    type: string
+                required:
+                  - proposals
+                  - message
+
+  /debates/{runId}:
+    get:
+      operationId: getDebates
+      tags: [debates]
+      summary: Get debate sessions for a run
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Debate sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DebateSession"
+                required:
+                  - sessions
+
+  /debates/{runId}/start:
+    post:
+      operationId: startDebate
+      tags: [debates]
+      summary: Start a debate session
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Debate started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebateSession"
+
+  /debates/sessions/{sessionId}/turns:
+    get:
+      operationId: getDebateTurns
+      tags: [debates]
+      summary: Get debate turns for a session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Debate turns
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  turns:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DebateTurn"
+                required:
+                  - turns
+
+  /report/{runId}:
+    get:
+      operationId: getReport
+      tags: [report]
+      summary: Get comprehensive research report
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Comprehensive report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResearchReport"
+
+  /report/{runId}/generate:
+    post:
+      operationId: generateReport
+      tags: [report]
+      summary: Generate comprehensive research report
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Report generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResearchReport"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +478,610 @@ components:
       required:
         - status
 
+    Paper:
+      type: object
+      properties:
+        id:
+          type: string
+        semanticScholarId:
+          type: string
+          nullable: true
+        openAlexId:
+          type: string
+          nullable: true
+        doi:
+          type: string
+          nullable: true
+        title:
+          type: string
+        abstract:
+          type: string
+          nullable: true
+        year:
+          type: integer
+          nullable: true
+        citationCount:
+          type: integer
+        influentialCitationCount:
+          type: integer
+        venue:
+          type: string
+          nullable: true
+        keywords:
+          type: array
+          items:
+            type: string
+        tldr:
+          type: string
+          nullable: true
+        url:
+          type: string
+          nullable: true
+        source:
+          type: string
+      required:
+        - id
+        - title
+        - citationCount
+        - influentialCitationCount
+        - keywords
+        - source
+
+    PaperDetail:
+      allOf:
+        - $ref: "#/components/schemas/Paper"
+        - type: object
+          properties:
+            authors:
+              type: array
+              items:
+                $ref: "#/components/schemas/Author"
+            references:
+              type: array
+              items:
+                $ref: "#/components/schemas/Paper"
+            citations:
+              type: array
+              items:
+                $ref: "#/components/schemas/Paper"
+          required:
+            - authors
+            - references
+            - citations
+
+    PaperListResponse:
+      type: object
+      properties:
+        papers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Paper"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - papers
+        - total
+        - limit
+        - offset
+
+    Author:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        affiliations:
+          type: array
+          items:
+            type: string
+        citationCount:
+          type: integer
+        paperCount:
+          type: integer
+        hIndex:
+          type: integer
+      required:
+        - id
+        - name
+        - affiliations
+        - citationCount
+        - paperCount
+        - hIndex
+
+    CollectionRun:
+      type: object
+      properties:
+        id:
+          type: string
+        topic:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        sourcesUsed:
+          type: array
+          items:
+            type: string
+        papersCollected:
+          type: integer
+        papersSkipped:
+          type: integer
+        papersDeduplicated:
+          type: integer
+        errorMessage:
+          type: string
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - topic
+        - status
+        - sourcesUsed
+        - papersCollected
+        - papersSkipped
+        - papersDeduplicated
+
+    StartCollectionRequest:
+      type: object
+      properties:
+        topic:
+          type: string
+          minLength: 2
+        limit:
+          type: integer
+          default: 200
+          minimum: 10
+          maximum: 1000
+        yearFrom:
+          type: integer
+        yearTo:
+          type: integer
+        sources:
+          type: array
+          items:
+            type: string
+            enum: [semantic_scholar, open_alex]
+          default: [semantic_scholar, open_alex]
+      required:
+        - topic
+
+    CitationGraphNode:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        year:
+          type: integer
+          nullable: true
+        citationCount:
+          type: integer
+        influentialCitationCount:
+          type: integer
+        depth:
+          type: integer
+        isHub:
+          type: boolean
+        isBridge:
+          type: boolean
+        cluster:
+          type: string
+          nullable: true
+        authors:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - title
+        - citationCount
+        - influentialCitationCount
+        - depth
+        - isHub
+        - isBridge
+        - authors
+
+    CitationGraphEdge:
+      type: object
+      properties:
+        source:
+          type: string
+        target:
+          type: string
+        isInfluential:
+          type: boolean
+      required:
+        - source
+        - target
+        - isInfluential
+
+    ResearchLineage:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        paperIds:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+      required:
+        - id
+        - name
+        - paperIds
+        - description
+
+    CitationGraph:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/CitationGraphNode"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/CitationGraphEdge"
+        seedPaperId:
+          type: string
+        totalNodes:
+          type: integer
+        totalEdges:
+          type: integer
+        lineages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResearchLineage"
+      required:
+        - nodes
+        - edges
+        - seedPaperId
+        - totalNodes
+        - totalEdges
+        - lineages
+
+    PaperSummary:
+      type: object
+      properties:
+        paperId:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        keyContributions:
+          type: array
+          items:
+            type: string
+        methodology:
+          type: string
+        impact:
+          type: string
+      required:
+        - paperId
+        - title
+        - summary
+        - keyContributions
+        - methodology
+        - impact
+
+    KeywordTrend:
+      type: object
+      properties:
+        keyword:
+          type: string
+        dataPoints:
+          type: array
+          items:
+            type: object
+            properties:
+              year:
+                type: integer
+              count:
+                type: integer
+              tfidfScore:
+                type: number
+            required:
+              - year
+              - count
+              - tfidfScore
+        growthRate:
+          type: number
+        peakYear:
+          type: integer
+      required:
+        - keyword
+        - dataPoints
+        - growthRate
+        - peakYear
+
+    TopAuthor:
+      type: object
+      properties:
+        author:
+          $ref: "#/components/schemas/Author"
+        paperCountInTopic:
+          type: integer
+        totalCitations:
+          type: integer
+      required:
+        - author
+        - paperCountInTopic
+        - totalCitations
+
+    PaperCluster:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        paperCount:
+          type: integer
+        growthRate:
+          type: number
+        description:
+          type: string
+      required:
+        - id
+        - label
+        - keywords
+        - paperCount
+        - growthRate
+        - description
+
+    TrendAnalysis:
+      type: object
+      properties:
+        runId:
+          type: string
+        topic:
+          type: string
+        keywordTrends:
+          type: array
+          items:
+            $ref: "#/components/schemas/KeywordTrend"
+        topAuthors:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopAuthor"
+        clusters:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaperCluster"
+        narrativeSummary:
+          type: string
+        totalPapersAnalyzed:
+          type: integer
+      required:
+        - runId
+        - topic
+        - keywordTrends
+        - topAuthors
+        - clusters
+        - narrativeSummary
+        - totalPapersAnalyzed
+
+    ResearchGap:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        evidenceType:
+          type: string
+          enum: [topic_modeling, citation_network, method_problem_matrix]
+        supportingPaperIds:
+          type: array
+          items:
+            type: string
+        noveltyScore:
+          type: number
+        impactScore:
+          type: number
+        feasibilityScore:
+          type: number
+      required:
+        - id
+        - title
+        - description
+        - evidenceType
+        - supportingPaperIds
+        - noveltyScore
+        - impactScore
+        - feasibilityScore
+
+    ResearchProposal:
+      type: object
+      properties:
+        id:
+          type: string
+        gapId:
+          type: string
+        title:
+          type: string
+        motivation:
+          type: string
+        researchQuestions:
+          type: array
+          items:
+            type: string
+        methodology:
+          type: string
+        expectedContributions:
+          type: array
+          items:
+            type: string
+        challenges:
+          type: array
+          items:
+            type: string
+        noveltyScore:
+          type: number
+        noveltyExplanation:
+          type: string
+          nullable: true
+        supportingPaperIds:
+          type: array
+          items:
+            type: string
+        rawText:
+          type: string
+          nullable: true
+      required:
+        - id
+        - gapId
+        - title
+        - motivation
+        - researchQuestions
+        - methodology
+        - expectedContributions
+        - challenges
+        - noveltyScore
+        - supportingPaperIds
+
+    DebateClaim:
+      type: object
+      properties:
+        claim:
+          type: string
+        evidenceStrength:
+          type: string
+          enum: [strong_empirical, indirect_inference, theoretical_speculation]
+        sourceIds:
+          type: array
+          items:
+            type: string
+      required:
+        - claim
+        - evidenceStrength
+        - sourceIds
+
+    DebateTurn:
+      type: object
+      properties:
+        id:
+          type: string
+        sessionId:
+          type: string
+        round:
+          type: integer
+        role:
+          type: string
+        content:
+          type: string
+        claims:
+          type: array
+          items:
+            $ref: "#/components/schemas/DebateClaim"
+      required:
+        - id
+        - sessionId
+        - round
+        - role
+        - content
+        - claims
+
+    DebateSession:
+      type: object
+      properties:
+        id:
+          type: string
+        collectionRunId:
+          type: string
+        topic:
+          type: string
+        controversialQuestion:
+          type: string
+        subTopics:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [pending, running, completed]
+        finalReport:
+          type: string
+          nullable: true
+        consensusPoints:
+          type: array
+          items:
+            type: string
+        disagreementPoints:
+          type: array
+          items:
+            type: string
+        openQuestions:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - collectionRunId
+        - topic
+        - controversialQuestion
+        - subTopics
+        - status
+        - consensusPoints
+        - disagreementPoints
+        - openQuestions
+
+    ResearchReport:
+      type: object
+      properties:
+        runId:
+          type: string
+        topic:
+          type: string
+        overview:
+          type: string
+        graphInsights:
+          type: string
+        trendsSummary:
+          type: string
+        gapsSummary:
+          type: string
+        controversySummary:
+          type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        totalPapers:
+          type: integer
+        generatedAt:
+          type: string
+          format: date-time
+      required:
+        - runId
+        - topic
+        - overview
+        - graphInsights
+        - trendsSummary
+        - gapsSummary
+        - controversySummary
+        - recommendations
+        - totalPapers
+        - generatedAt
