@@ -66,6 +66,14 @@ export function ReportView({ runId }: { runId: string }) {
     URL.revokeObjectURL(url);
   }, [data]);
 
+  const escapeHtml = (text: string): string =>
+    text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
   const handleExportHtml = useCallback(() => {
     if (!data) return;
 
@@ -82,7 +90,7 @@ export function ReportView({ runId }: { runId: string }) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Research Intelligence Dossier — ${data.topic}</title>
+  <title>Research Intelligence Dossier — ${escapeHtml(data.topic)}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Georgia, 'Times New Roman', serif; background: #0a0a0f; color: #e8eaf0; line-height: 1.7; padding: 2rem; }
@@ -105,23 +113,23 @@ export function ReportView({ runId }: { runId: string }) {
   <div class="container">
     <header>
       <div class="label">Intelligence Dossier</div>
-      <h1>${data.topic}</h1>
+      <h1>${escapeHtml(data.topic)}</h1>
       <div class="meta">
-        <span>ID: ${data.runId.split("-")[0]}</span>
-        <span>Generated: ${format(new Date(data.generatedAt), "MMMM dd, yyyy HH:mm")}</span>
+        <span>ID: ${escapeHtml(data.runId.split("-")[0] ?? "")}</span>
+        <span>Generated: ${escapeHtml(format(new Date(data.generatedAt), "MMMM dd, yyyy HH:mm"))}</span>
         <span>Corpus: ${data.totalPapers} documents</span>
       </div>
     </header>
     ${sections.map(({ title, content }) => `
     <section>
-      <h2>${title}</h2>
-      <p>${content}</p>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(content)}</p>
     </section>`).join("")}
     ${data.recommendations.length > 0 ? `
     <section>
       <h2>Strategic Recommendations</h2>
       <ol style="list-style:none; padding:0;">
-        ${data.recommendations.map((r, i) => `<li><span class="rec-num">${String(i + 1).padStart(2, "0")}</span>${r}</li>`).join("")}
+        ${data.recommendations.map((r, i) => `<li><span class="rec-num">${String(i + 1).padStart(2, "0")}</span>${escapeHtml(r)}</li>`).join("")}
       </ol>
     </section>` : ""}
     <footer>
