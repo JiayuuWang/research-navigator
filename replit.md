@@ -123,3 +123,8 @@ pnpm --filter @workspace/api-server exec tsc -p tsconfig.json --noEmit
 - `AI_INTEGRATIONS_OPENAI_BASE_URL` — OpenAI proxy base URL (auto-set)
 - `AI_INTEGRATIONS_OPENAI_API_KEY` — OpenAI proxy key (auto-set)
 - `PORT` — Server port (auto-assigned by Replit)
+
+## GitHub Repository
+
+Private repo: https://github.com/JiayuuWang/research-navigator
+Auto-push: enabled via post-commit hook (requires GITHUB_TOKEN secret)
