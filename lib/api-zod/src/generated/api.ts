@@ -292,16 +292,12 @@ export const GetTrendsResponse = zod.object({
   ),
   topAuthors: zod.array(
     zod.object({
-      author: zod.object({
-        id: zod.string(),
-        name: zod.string(),
-        affiliations: zod.array(zod.string()),
-        citationCount: zod.number(),
-        paperCount: zod.number(),
-        hIndex: zod.number(),
-      }),
-      paperCountInTopic: zod.number(),
-      totalCitations: zod.number(),
+      id: zod.string(),
+      name: zod.string(),
+      paperCount: zod.number(),
+      citationCount: zod.number(),
+      hIndex: zod.number().nullable().optional(),
+      affiliations: zod.array(zod.string()),
     }),
   ),
   clusters: zod.array(
@@ -344,16 +340,12 @@ export const ComputeTrendsResponse = zod.object({
   ),
   topAuthors: zod.array(
     zod.object({
-      author: zod.object({
-        id: zod.string(),
-        name: zod.string(),
-        affiliations: zod.array(zod.string()),
-        citationCount: zod.number(),
-        paperCount: zod.number(),
-        hIndex: zod.number(),
-      }),
-      paperCountInTopic: zod.number(),
-      totalCitations: zod.number(),
+      id: zod.string(),
+      name: zod.string(),
+      paperCount: zod.number(),
+      citationCount: zod.number(),
+      hIndex: zod.number().nullable().optional(),
+      affiliations: zod.array(zod.string()),
     }),
   ),
   clusters: zod.array(

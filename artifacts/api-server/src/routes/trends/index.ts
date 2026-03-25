@@ -7,13 +7,15 @@ import {
   paperAuthorsTable,
   keywordTrendsTable,
   clustersTable,
-  paperClustersTable,
 } from "@workspace/db";
-import { eq, sql, desc, inArray, and } from "drizzle-orm";
+import { eq, sql, desc, inArray } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { randomUUID } from "crypto";
 
 const router: IRouter = Router();
+
+// In-memory cache for narrative summaries per runId
+const narrativeCache = new Map<string, string>();
 
 function computeTfIdf(documents: string[][]): Map<string, number> {
   const N = documents.length;
@@ -47,6 +49,7 @@ function extractKeywords(text: string): string[] {
     "can", "this", "that", "these", "those", "we", "our", "their", "its",
     "also", "using", "based", "proposed", "show", "paper", "results", "method",
     "approach", "model", "data", "use", "used", "new", "present", "work",
+    "study", "research", "learning", "deep", "neural", "network", "networks",
   ]);
 
   return text
@@ -54,6 +57,49 @@ function extractKeywords(text: string): string[] {
     .replace(/[^a-z0-9\s-]/g, " ")
     .split(/\s+/)
     .filter((w) => w.length >= 4 && !stopWords.has(w));
+}
+
+async function getTopAuthors(runId: string, paperIds: string[]) {
+  if (paperIds.length === 0) return [];
+
+  // Get paper-author relationships for papers in this run
+  const paperAuthorRows = await db
+    .select({
+      authorId: paperAuthorsTable.authorId,
+      paperId: paperAuthorsTable.paperId,
+    })
+    .from(paperAuthorsTable)
+    .where(inArray(paperAuthorsTable.paperId, paperIds.slice(0, 200)));
+
+  if (paperAuthorRows.length === 0) return [];
+
+  // Count papers per author
+  const authorPaperCount = new Map<string, number>();
+  for (const row of paperAuthorRows) {
+    authorPaperCount.set(row.authorId, (authorPaperCount.get(row.authorId) ?? 0) + 1);
+  }
+
+  // Get top 10 author IDs
+  const topAuthorIds = Array.from(authorPaperCount.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([id]) => id);
+
+  if (topAuthorIds.length === 0) return [];
+
+  const authors = await db
+    .select()
+    .from(authorsTable)
+    .where(inArray(authorsTable.id, topAuthorIds));
+
+  return authors.map((a) => ({
+    id: a.id,
+    name: a.name,
+    paperCount: authorPaperCount.get(a.id) ?? 0,
+    citationCount: a.citationCount ?? 0,
+    hIndex: a.hIndex ?? 0,
+    affiliations: (a.affiliations as string[]) ?? [],
+  })).sort((a, b) => b.paperCount - a.paperCount);
 }
 
 // GET /trends/:runId
@@ -67,8 +113,13 @@ router.get("/:runId", async (req, res) => {
       return;
     }
 
-    const trends = await db.select().from(keywordTrendsTable).where(eq(keywordTrendsTable.collectionRunId, runId!));
-    const clusters = await db.select().from(clustersTable).where(eq(clustersTable.collectionRunId, runId!));
+    const [trends, clusters, papers] = await Promise.all([
+      db.select().from(keywordTrendsTable).where(eq(keywordTrendsTable.collectionRunId, runId!)),
+      db.select().from(clustersTable).where(eq(clustersTable.collectionRunId, runId!)),
+      db.select({ id: papersTable.id }).from(papersTable).where(eq(papersTable.collectionRunId, runId!)),
+    ]);
+
+    const paperIds = papers.map((p) => p.id);
 
     if (trends.length === 0) {
       res.json({
@@ -93,8 +144,10 @@ router.get("/:runId", async (req, res) => {
     const keywordTrendsSerialized = Array.from(keywordMap.entries())
       .map(([keyword, points]) => ({
         keyword,
-        dataPoints: points.map((p) => ({ year: p.year, count: p.count ?? 0, tfidfScore: p.tfidfScore ?? 0 })),
-        growthRate: points[points.length - 1]?.growthRate ?? 0,
+        dataPoints: points
+          .map((p) => ({ year: p.year, count: p.count ?? 0, tfidfScore: p.tfidfScore ?? 0 }))
+          .sort((a, b) => a.year - b.year),
+        growthRate: Math.max(...points.map((p) => p.growthRate ?? 0)),
         peakYear: points.reduce((a, b) => ((a.count ?? 0) > (b.count ?? 0) ? a : b)).year,
       }))
       .sort((a, b) => b.growthRate - a.growthRate)
@@ -109,13 +162,16 @@ router.get("/:runId", async (req, res) => {
       description: c.description ?? "",
     }));
 
+    const topAuthors = await getTopAuthors(runId!, paperIds);
+    const narrativeSummary = narrativeCache.get(runId!) ?? "Trend analysis complete.";
+
     res.json({
       runId,
       topic: run.topic,
       keywordTrends: keywordTrendsSerialized,
-      topAuthors: [],
+      topAuthors,
       clusters: clustersSerialized,
-      narrativeSummary: "Trend analysis complete.",
+      narrativeSummary,
       totalPapersAnalyzed: run.papersCollected ?? 0,
     });
   } catch (err) {
@@ -153,11 +209,13 @@ router.post("/:runId/compute", async (req, res) => {
       return;
     }
 
+    const paperIds = papers.map((p) => p.id);
+
     // Compute keyword trends per year
     const yearKeywords = new Map<number, string[]>();
     for (const paper of papers) {
       const year = paper.year;
-      if (!year || year < 2020) continue;
+      if (!year || year < 2018) continue;
 
       const tokens: string[] = [];
       if (paper.title) tokens.push(...extractKeywords(paper.title));
@@ -187,7 +245,7 @@ router.post("/:runId/compute", async (req, res) => {
 
     // Compute TF-IDF per keyword
     const docs = allYears.map((y) => yearKeywords.get(y) ?? []);
-    const tfidf = computeTfIdf(docs);
+    const tfidf = computeTfIdf(docs.length > 0 ? docs : [[]]);
 
     // Clear existing trends for this run
     await db.delete(keywordTrendsTable).where(eq(keywordTrendsTable.collectionRunId, runId!));
@@ -221,62 +279,67 @@ router.post("/:runId/compute", async (req, res) => {
       }
     }
 
-    // Simple clustering: group papers by keyword buckets (K=5)
+    // Cluster papers: use top 8 keywords as cluster seeds
     await db.delete(clustersTable).where(eq(clustersTable.collectionRunId, runId!));
 
-    // Use top 5 keywords as cluster seeds
-    const clusterSeeds = topKeywords.slice(0, 5);
+    const clusterSeeds = topKeywords.slice(0, 8);
+    const clusterInserts = [];
     for (const seedKw of clusterSeeds) {
       const clusterId = randomUUID();
       const related = topKeywords.filter((k) => k !== seedKw).slice(0, 4);
 
-      // Count papers mentioning this keyword
-      const paperCount = papers.filter((p) => {
+      const matchingPapers = papers.filter((p) => {
         const text = `${p.title ?? ""} ${p.abstract ?? ""}`.toLowerCase();
         return text.includes(seedKw);
-      }).length;
-
-      const recentCount = papers.filter((p) => {
-        const text = `${p.title ?? ""} ${p.abstract ?? ""}`.toLowerCase();
-        return text.includes(seedKw) && (p.year ?? 0) >= 2023;
-      }).length;
-
-      const olderCount = papers.filter((p) => {
-        const text = `${p.title ?? ""} ${p.abstract ?? ""}`.toLowerCase();
-        return text.includes(seedKw) && (p.year ?? 0) < 2023;
-      }).length;
-
-      const growthRate = olderCount > 0 ? (recentCount - olderCount) / olderCount : 0;
-
-      await db.insert(clustersTable).values({
-        id: clusterId,
-        collectionRunId: runId!,
-        label: seedKw,
-        keywords: [seedKw, ...related],
-        paperCount,
-        growthRate,
-        description: `Research cluster around "${seedKw}" with ${paperCount} papers`,
       });
-    }
 
-    // Generate AI narrative
+      const paperCount = matchingPapers.length;
+      const recentCount = matchingPapers.filter((p) => (p.year ?? 0) >= 2023).length;
+      const olderCount = matchingPapers.filter((p) => (p.year ?? 0) < 2023 && (p.year ?? 0) >= 2018).length;
+      const growthRate = olderCount > 0 ? (recentCount - olderCount) / olderCount : recentCount > 0 ? 1.0 : 0;
+
+      clusterInserts.push(
+        db.insert(clustersTable).values({
+          id: clusterId,
+          collectionRunId: runId!,
+          label: seedKw,
+          keywords: [seedKw, ...related],
+          paperCount,
+          growthRate,
+          description: `Research cluster around "${seedKw}" with ${paperCount} papers (${Math.round(growthRate * 100)}% growth)`,
+        })
+      );
+    }
+    await Promise.all(clusterInserts);
+
+    // Generate AI narrative using top keywords and growth stats
     const topKws = topKeywords.slice(0, 10).join(", ");
+    const growthStats = clusterSeeds.slice(0, 3).map((kw) => {
+      const cnt = papers.filter((p) => `${p.title ?? ""} ${p.abstract ?? ""}`.toLowerCase().includes(kw)).length;
+      return `${kw} (${cnt} papers)`;
+    }).join(", ");
+
     const narrative = await openai.chat.completions.create({
       model: "gpt-5.2",
-      max_completion_tokens: 512,
+      max_completion_tokens: 600,
       messages: [{
         role: "user",
-        content: `Given a research collection on "${run.topic}" with ${papers.length} papers, the top emerging keywords are: ${topKws}.
+        content: `Research field: "${run.topic}" (${papers.length} papers analyzed)
+Top emerging keywords: ${topKws}
+Leading clusters: ${growthStats}
 
-Write a 3-4 sentence trend analysis summary. Be specific, include growth trends, and use natural language. Mention specific numbers where possible.`,
+Write a 4-5 sentence trend analysis. Include specific growth statistics, mention the dominant keywords, identify 2-3 major research directions, and use precise language. Format: plain text, no bullet points.`,
       }],
     });
 
     const narrativeSummary = narrative.choices[0]?.message?.content ?? "Trend analysis completed.";
+    narrativeCache.set(runId!, narrativeSummary);
 
     // Fetch what we just wrote
-    const trends = await db.select().from(keywordTrendsTable).where(eq(keywordTrendsTable.collectionRunId, runId!));
-    const clusters = await db.select().from(clustersTable).where(eq(clustersTable.collectionRunId, runId!));
+    const [trends, clusters] = await Promise.all([
+      db.select().from(keywordTrendsTable).where(eq(keywordTrendsTable.collectionRunId, runId!)),
+      db.select().from(clustersTable).where(eq(clustersTable.collectionRunId, runId!)),
+    ]);
 
     const keywordMap = new Map<string, typeof trends>();
     for (const t of trends) {
@@ -287,18 +350,22 @@ Write a 3-4 sentence trend analysis summary. Be specific, include growth trends,
     const keywordTrendsSerialized = Array.from(keywordMap.entries())
       .map(([keyword, points]) => ({
         keyword,
-        dataPoints: points.map((p) => ({ year: p.year, count: p.count ?? 0, tfidfScore: p.tfidfScore ?? 0 })),
+        dataPoints: points
+          .map((p) => ({ year: p.year, count: p.count ?? 0, tfidfScore: p.tfidfScore ?? 0 }))
+          .sort((a, b) => a.year - b.year),
         growthRate: Math.max(...points.map((p) => p.growthRate ?? 0)),
         peakYear: points.reduce((a, b) => ((a.count ?? 0) > (b.count ?? 0) ? a : b)).year,
       }))
       .sort((a, b) => b.growthRate - a.growthRate)
       .slice(0, 20);
 
+    const topAuthors = await getTopAuthors(runId!, paperIds);
+
     res.json({
       runId,
       topic: run.topic,
       keywordTrends: keywordTrendsSerialized,
-      topAuthors: [],
+      topAuthors,
       clusters: clusters.map((c) => ({
         id: c.id,
         label: c.label,

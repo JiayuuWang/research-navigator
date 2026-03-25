@@ -813,16 +813,27 @@ components:
     TopAuthor:
       type: object
       properties:
-        author:
-          $ref: "#/components/schemas/Author"
-        paperCountInTopic:
+        id:
+          type: string
+        name:
+          type: string
+        paperCount:
           type: integer
-        totalCitations:
+        citationCount:
           type: integer
+        hIndex:
+          type: integer
+          nullable: true
+        affiliations:
+          type: array
+          items:
+            type: string
       required:
-        - author
-        - paperCountInTopic
-        - totalCitations
+        - id
+        - name
+        - paperCount
+        - citationCount
+        - affiliations
 
     PaperCluster:
       type: object

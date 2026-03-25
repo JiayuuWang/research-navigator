@@ -5,10 +5,12 @@
  * Research Navigator API - Comprehensive scientific intelligence platform
  * OpenAPI spec version: 0.1.0
  */
-import type { Author } from "./author";
 
 export interface TopAuthor {
-  author: Author;
-  paperCountInTopic: number;
-  totalCitations: number;
+  id: string;
+  name: string;
+  paperCount: number;
+  citationCount: number;
+  hIndex?: number | null;
+  affiliations: string[];
 }

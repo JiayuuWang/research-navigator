@@ -150,9 +150,12 @@ export interface KeywordTrend {
 }
 
 export interface TopAuthor {
-  author: Author;
-  paperCountInTopic: number;
-  totalCitations: number;
+  id: string;
+  name: string;
+  paperCount: number;
+  citationCount: number;
+  hIndex?: number | null;
+  affiliations: string[];
 }
 
 export interface PaperCluster {
