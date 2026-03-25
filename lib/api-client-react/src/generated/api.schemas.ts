@@ -277,6 +277,7 @@ export type ListPapersParams = {
   limit?: number;
   offset?: number;
   sortBy?: ListPapersSortBy;
+  runId?: string;
 };
 
 export type ListPapersSortBy =

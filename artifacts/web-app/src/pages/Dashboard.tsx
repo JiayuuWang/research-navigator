@@ -135,7 +135,7 @@ export default function Dashboard() {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {activeTab === "papers" && <PapersList topic={run.topic} />}
+                  {activeTab === "papers" && <PapersList topic={run.topic} runId={run.id} />}
                   {activeTab === "graph" && <CitationGraphView topic={run.topic} />}
                   {activeTab === "trends" && <TrendAnalysisView runId={run.id} />}
                   {activeTab === "gaps" && <ResearchGapsView runId={run.id} />}

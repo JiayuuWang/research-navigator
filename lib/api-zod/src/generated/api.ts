@@ -30,6 +30,7 @@ export const ListPapersQueryParams = zod.object({
   sortBy: zod
     .enum(["citationCount", "publicationDate", "year"])
     .default(listPapersQuerySortByDefault),
+  runId: zod.string().uuid().optional(),
 });
 
 export const ListPapersResponse = zod.object({

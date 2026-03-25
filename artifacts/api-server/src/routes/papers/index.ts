@@ -10,6 +10,7 @@ const ListPapersQuerySchema = z.object({
   sortBy: z.enum(["citationCount", "year", "title", "influentialCitationCount"]).optional().default("citationCount"),
   year: z.coerce.number().int().optional(),
   topic: z.string().optional(),
+  runId: z.string().uuid().optional(),
 });
 
 const router: IRouter = Router();
@@ -22,11 +23,14 @@ router.get("/", async (req, res) => {
       res.status(400).json({ error: "Invalid query parameters", details: parsed.error.flatten() });
       return;
     }
-    const { limit, offset, sortBy, year } = parsed.data;
+    const { limit, offset, sortBy, year, runId } = parsed.data;
 
     const conditions = [];
     if (year) {
       conditions.push(eq(papersTable.year, year));
+    }
+    if (runId) {
+      conditions.push(eq(papersTable.collectionRunId, runId));
     }
 
     let orderCol;
