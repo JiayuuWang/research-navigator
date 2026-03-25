@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -f .replit .replitignore replit.md)",
+      "Bash(rm -rf artifacts/api-server/.replit-artifact artifacts/web-app/.replit-artifact artifacts/mockup-sandbox lib/integrations-openai-ai-react)",
+      "WebFetch(domain:www.conductor.build)",
+      "WebSearch",
+      "WebFetch(domain:conductor.build)",
+      "mcp__ide__executeCode",
+      "WebFetch(domain:www.opencode.ai)"
+    ]
+  }
+}

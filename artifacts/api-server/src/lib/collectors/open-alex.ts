@@ -3,7 +3,7 @@ import type { CollectedPaper } from "./semantic-scholar.js";
 
 const BASE_URL = "https://api.openalex.org";
 const RATE_LIMIT_MS = 500;
-const EMAIL = "research-navigator@replit.app";
+const EMAIL = process.env.OPENALEX_EMAIL ?? "";
 
 interface OAWork {
   id: string;
@@ -117,7 +117,7 @@ export async function collectFromOpenAlex(
       `${BASE_URL}/works?search=${encodeURIComponent(topic)}` +
       `&filter=publication_year:${minYear}-${maxYear},type:article` +
       `&select=id,title,abstract_inverted_index,publication_year,publication_date,cited_by_count,doi,primary_location,authorships,keywords,concepts` +
-      `&per-page=${fetchSize}&cursor=${cursor}&mailto=${EMAIL}&sort=cited_by_count:desc`;
+      `&per-page=${fetchSize}&cursor=${cursor}${EMAIL ? `&mailto=${EMAIL}` : ""}&sort=cited_by_count:desc`;
 
     logger.info({ url, collected: papers.length }, "Fetching from OpenAlex");
 
