@@ -15,6 +15,7 @@ node_modules
 /.idea
 .project
 .classpath
+.claude/
 .c9/
 *.launch
 .settings/
