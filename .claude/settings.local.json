@@ -11,7 +11,15 @@
       "Bash(pnpm run:*)",
       "Bash(pnpm install:*)",
       "Bash(pnpm --filter @workspace/web-app exec tsc -p tsconfig.json --noEmit)",
-      "Bash(pnpm --filter @workspace/api-server exec tsc -p tsconfig.json --noEmit)"
+      "Bash(pnpm --filter @workspace/api-server exec tsc -p tsconfig.json --noEmit)",
+      "Bash(pnpm:*)",
+      "Bash(source .env)",
+      "Bash(export DATABASE_URL)",
+      "Bash(source ../../.env)",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(export DATABASE_URL OPENAI_API_KEY OPENAI_BASE_URL)",
+      "Bash(curl -s http://localhost:8080/api/collection/runs)",
+      "Bash(curl -s http://localhost:5173)"
     ]
   }
 }
