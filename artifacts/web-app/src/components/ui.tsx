@@ -38,7 +38,7 @@ export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
   ({ className, variant = 'default', size = 'md', ...props }, ref) => {
     const variants = {
       default: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-      primary: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(32,178,170,0.3)] hover:shadow-[0_0_25px_rgba(32,178,170,0.5)] tech-border",
+      primary: "bg-foreground text-background hover:bg-foreground/90",
       outline: "border border-border bg-transparent hover:bg-secondary text-foreground",
       ghost: "bg-transparent hover:bg-secondary/50 text-foreground",
       destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -71,7 +71,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
       <input
         type={type}
         className={cn(
-          "flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 transition-colors",
+          "flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-foreground/30 disabled:cursor-not-allowed disabled:opacity-50 transition-colors",
           className
         )}
         ref={ref}
@@ -86,7 +86,7 @@ export const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
   ({ className, variant = 'default', ...props }, ref) => {
     const variants = {
       default: "bg-secondary text-secondary-foreground",
-      primary: "bg-primary/20 text-primary border border-primary/50",
+      primary: "bg-secondary text-foreground border border-border",
       outline: "text-foreground border border-border"
     };
     return (
@@ -100,7 +100,7 @@ export const Progress = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HT
   ({ className, value, ...props }, ref) => (
     <div ref={ref} className={cn("relative h-2 w-full overflow-hidden rounded-full bg-secondary", className)} {...props}>
       <div
-        className="h-full w-full flex-1 bg-primary transition-all duration-500 ease-in-out shadow-[0_0_10px_rgba(32,178,170,0.8)]"
+        className="h-full w-full flex-1 bg-foreground transition-all duration-500 ease-in-out"
         style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
       />
     </div>
@@ -121,14 +121,14 @@ export const Tabs = ({ tabs, activeTab, onChange }: { tabs: { id: string; label:
           onClick={() => onChange(tab.id)}
           className={cn(
             "relative px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
-            activeTab === tab.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            activeTab === tab.id ? "text-foreground" : "text-muted-foreground hover:text-foreground"
           )}
         >
           {tab.label}
           {activeTab === tab.id && (
             <motion.div
               layoutId="activeTab"
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_8px_rgba(32,178,170,0.8)]"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground"
               initial={false}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
             />

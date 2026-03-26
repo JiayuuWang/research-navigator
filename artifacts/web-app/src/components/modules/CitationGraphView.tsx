@@ -6,13 +6,13 @@ import { Network, Search, Zap, Loader2, X, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CLUSTER_COLORS = [
-  "hsl(170,80%,50%)",
-  "hsl(270,70%,60%)",
-  "hsl(45,90%,50%)",
-  "hsl(330,80%,60%)",
-  "hsl(210,90%,60%)",
-  "hsl(10,80%,55%)",
-  "hsl(120,70%,45%)",
+  "hsl(0,0%,80%)",
+  "hsl(0,0%,65%)",
+  "hsl(0,0%,50%)",
+  "hsl(0,0%,38%)",
+  "hsl(0,0%,28%)",
+  "hsl(0,0%,72%)",
+  "hsl(0,0%,44%)",
 ];
 
 function PaperSummaryPanel({ paperId, onClose }: { paperId: string; onClose: () => void }) {
@@ -23,10 +23,10 @@ function PaperSummaryPanel({ paperId, onClose }: { paperId: string; onClose: () 
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="absolute top-4 right-4 w-80 glass-panel rounded-lg border border-primary/30 p-4 shadow-2xl z-10 max-h-[80vh] flex flex-col bg-black/90"
+      className="absolute top-4 right-4 w-80 bg-card border border-border rounded p-4 z-10 max-h-[80vh] flex flex-col"
     >
       <div className="flex justify-between items-start mb-4">
-        <h4 className="font-mono text-sm text-primary flex items-center gap-2">
+        <h4 className="font-mono text-sm text-foreground flex items-center gap-2">
           <Zap className="w-4 h-4" /> AI Analysis
         </h4>
         <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-white/10 transition-colors">
@@ -177,8 +177,8 @@ export function CitationGraphView({ topic }: { topic: string }) {
       ctx.beginPath();
       ctx.arc(x, y, size + 3, 0, 2 * Math.PI);
       const grd = ctx.createRadialGradient(x, y, 0, x, y, size + 3);
-      grd.addColorStop(0, "rgba(0,240,180,0.4)");
-      grd.addColorStop(1, "rgba(0,240,180,0)");
+      grd.addColorStop(0, "rgba(255,255,255,0.2)");
+      grd.addColorStop(1, "rgba(255,255,255,0)");
       ctx.fillStyle = grd;
       ctx.fill();
     }
@@ -186,12 +186,12 @@ export function CitationGraphView({ topic }: { topic: string }) {
     ctx.beginPath();
     ctx.arc(x, y, size, 0, 2 * Math.PI);
     ctx.fillStyle = node.isHub
-      ? "hsl(170,80%,55%)"
+      ? "hsl(0,0%,90%)"
       : node.isBridge
-      ? "hsl(270,70%,65%)"
+      ? "hsl(0,0%,70%)"
       : node.highlighted
-      ? "hsl(45,90%,55%)"
-      : (node.color ?? "hsl(220,15%,45%)");
+      ? "hsl(0,0%,80%)"
+      : (node.color ?? "hsl(0,0%,45%)");
     ctx.fill();
 
     // Label for larger nodes
@@ -206,24 +206,24 @@ export function CitationGraphView({ topic }: { topic: string }) {
 
   if (isLoading || !seedId) {
     return (
-      <div className="w-full h-[600px] flex items-center justify-center border border-border/50 rounded-lg bg-card/30 relative overflow-hidden">
+      <div className="w-full h-[600px] flex items-center justify-center border border-border rounded bg-card relative overflow-hidden">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <div className="font-mono text-sm text-primary text-glow">Synthesizing Network Topology...</div>
+          <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+          <div className="font-mono text-sm text-muted-foreground">Building network graph…</div>
         </div>
       </div>
     );
   }
 
   if (!graphData || graphData.nodes.length === 0) {
-    return <div className="p-8 text-center text-muted-foreground glass-panel">Insufficient data to generate network graph. Try collecting more papers first.</div>;
+    return <div className="p-8 text-center text-muted-foreground panel rounded">Insufficient data to generate network graph. Try collecting more papers first.</div>;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-mono text-foreground flex items-center gap-2">
-          <Network className="w-5 h-5 text-primary" />
+          <Network className="w-5 h-5 text-muted-foreground" />
           Citation Network Topology
         </h3>
         <div className="flex gap-2 items-center font-mono text-xs">
@@ -249,7 +249,7 @@ export function CitationGraphView({ topic }: { topic: string }) {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="glass-panel rounded-lg border border-border/50 p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="panel rounded border border-border p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-2 block">Search Papers</label>
                 <div className="relative">
@@ -259,7 +259,7 @@ export function CitationGraphView({ topic }: { topic: string }) {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Filter by title..."
-                    className="w-full pl-7 pr-3 py-1.5 text-xs bg-background border border-border rounded font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full pl-7 pr-3 py-1.5 text-xs bg-background border border-border rounded font-mono focus:outline-none focus:ring-1 focus:ring-border"
                   />
                 </div>
               </div>
@@ -276,7 +276,7 @@ export function CitationGraphView({ topic }: { topic: string }) {
                     max={new Date().getFullYear()}
                     value={yearRange[0]}
                     onChange={(e) => setYearRange([Number(e.target.value), yearRange[1]])}
-                    className="flex-1 accent-primary h-1"
+                    className="flex-1 accent-foreground h-1"
                   />
                   <input
                     type="range"
@@ -284,7 +284,7 @@ export function CitationGraphView({ topic }: { topic: string }) {
                     max={new Date().getFullYear()}
                     value={yearRange[1]}
                     onChange={(e) => setYearRange([yearRange[0], Number(e.target.value)])}
-                    className="flex-1 accent-primary h-1"
+                    className="flex-1 accent-foreground h-1"
                   />
                   <span className="text-xs text-muted-foreground">{new Date().getFullYear()}</span>
                 </div>
@@ -300,7 +300,7 @@ export function CitationGraphView({ topic }: { topic: string }) {
                   max={Math.max(maxCitations, 1)}
                   value={minCitations}
                   onChange={(e) => setMinCitations(Number(e.target.value))}
-                  className="w-full accent-primary h-1"
+                  className="w-full accent-foreground h-1"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <span>0</span>
@@ -312,7 +312,7 @@ export function CitationGraphView({ topic }: { topic: string }) {
         )}
       </AnimatePresence>
 
-      <div className="relative w-full h-[650px] border border-border rounded-lg overflow-hidden bg-black/50" ref={containerRef}>
+      <div className="relative w-full h-[650px] border border-border rounded overflow-hidden bg-card" ref={containerRef}>
         <ForceGraph2D
           width={dimensions.width}
           height={dimensions.height}
@@ -320,31 +320,31 @@ export function CitationGraphView({ topic }: { topic: string }) {
           nodeLabel={(node) => `${(node as any).name} (${(node as any).year ?? "?"}) — ${(node as any).citationCount ?? 0} citations`}
           nodeCanvasObject={nodeCanvasObject}
           nodeCanvasObjectMode={() => "replace"}
-          linkColor={(link) => (link as any).influential ? "rgba(0,240,180,0.25)" : "rgba(255,255,255,0.06)"}
+          linkColor={(link) => (link as any).influential ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.05)"}
           linkWidth={(link) => (link as any).influential ? 1.5 : 0.5}
           onNodeClick={(node) => setSelectedNode((node as any).id)}
-          backgroundColor="#0a0a0c"
+          backgroundColor="#0a0a0a"
           enableNodeDrag={true}
           enableZoomInteraction={true}
           cooldownTicks={150}
         />
 
-        <div className="absolute bottom-4 left-4 glass-panel p-3 rounded text-xs font-mono flex flex-col gap-2 bg-black/80">
+        <div className="absolute bottom-4 left-4 bg-card border border-border p-3 rounded text-xs font-mono flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[hsl(170,80%,55%)] shadow-[0_0_8px_hsl(170,80%,55%)]" />
+            <div className="w-3 h-3 rounded-full bg-[hsl(0,0%,90%)]" />
             Hub Paper
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[hsl(270,70%,65%)] shadow-[0_0_8px_hsl(270,70%,65%)]" />
+            <div className="w-3 h-3 rounded-full bg-[hsl(0,0%,70%)]" />
             Bridge Paper
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[hsl(220,15%,45%)]" />
+            <div className="w-3 h-3 rounded-full bg-[hsl(0,0%,45%)]" />
             Standard Node
           </div>
           {searchQuery && (
             <div className="flex items-center gap-2 border-t border-border pt-2 mt-1">
-              <div className="w-3 h-3 rounded-full bg-[hsl(45,90%,55%)] shadow-[0_0_8px_hsl(45,90%,55%)]" />
+              <div className="w-3 h-3 rounded-full bg-[hsl(0,0%,80%)]" />
               Search Match
             </div>
           )}
@@ -364,7 +364,7 @@ export function CitationGraphView({ topic }: { topic: string }) {
             {graphData.lineages.map((lineage, i) => (
               <div
                 key={lineage.id}
-                className="p-3 border border-border/50 rounded bg-secondary/30 cursor-pointer hover:border-primary/40 transition-colors"
+                className="p-3 border border-border rounded bg-secondary/30 cursor-pointer hover:border-foreground/30 transition-colors"
                 onClick={() => {
                   const paperId = lineage.paperIds?.[0];
                   if (paperId) setSelectedNode(paperId);
@@ -374,7 +374,7 @@ export function CitationGraphView({ topic }: { topic: string }) {
                   className="w-2 h-2 rounded-full mb-2 inline-block mr-1"
                   style={{ backgroundColor: CLUSTER_COLORS[i % CLUSTER_COLORS.length] }}
                 />
-                <div className="font-semibold text-xs mb-1 text-primary font-mono truncate">{lineage.name}</div>
+                <div className="font-semibold text-xs mb-1 text-foreground font-mono truncate">{lineage.name}</div>
                 <p className="text-xs text-muted-foreground">{lineage.description}</p>
               </div>
             ))}

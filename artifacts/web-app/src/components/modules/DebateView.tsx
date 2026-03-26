@@ -7,17 +7,17 @@ import { cn } from "@/lib/utils";
 import type { DebateSession } from "@workspace/api-client-react";
 
 const ROLE_STYLES: Record<string, { border: string; bg: string; text: string; align: string }> = {
-  "Proponent":              { border: "border-primary/50",     bg: "bg-primary/10",     text: "text-primary",     align: "ml-auto items-end" },
-  "Methodological Critic":  { border: "border-destructive/50", bg: "bg-destructive/10", text: "text-destructive", align: "mr-auto items-start" },
-  "Empirical Analyst":      { border: "border-accent/50",      bg: "bg-accent/10",      text: "text-accent",      align: "mr-auto items-start" },
-  "Synthesist":             { border: "border-secondary/80",   bg: "bg-secondary/40",   text: "text-foreground",  align: "mx-auto items-center w-full max-w-full" },
+  "Proponent":              { border: "border-border",     bg: "bg-secondary/40",   text: "text-foreground",     align: "ml-auto items-end" },
+  "Methodological Critic":  { border: "border-border",     bg: "bg-secondary/20",   text: "text-foreground",     align: "mr-auto items-start" },
+  "Empirical Analyst":      { border: "border-border",     bg: "bg-secondary/30",   text: "text-foreground",     align: "mr-auto items-start" },
+  "Synthesist":             { border: "border-border",     bg: "bg-secondary/50",   text: "text-foreground",     align: "mx-auto items-center w-full max-w-full" },
 };
 
 const ROLE_COLORS = [
-  "bg-primary text-primary-foreground",
-  "bg-destructive text-destructive-foreground",
-  "bg-accent text-accent-foreground",
-  "bg-secondary text-secondary-foreground",
+  "bg-foreground/80",
+  "bg-foreground/50",
+  "bg-foreground/60",
+  "bg-foreground/30",
 ];
 
 function RoleLegend() {
@@ -27,13 +27,13 @@ function RoleLegend() {
       {roles.map((role, i) => {
         const s = ROLE_STYLES[role]!;
         return (
-          <div key={role} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono", s.border, s.bg, s.text)}>
+          <div key={role} className={cn("flex items-center gap-2 px-3 py-1.5 rounded border text-xs font-mono text-muted-foreground border-border")}>
             <span className={cn("w-2 h-2 rounded-full", ROLE_COLORS[i]?.split(" ")[0])} />
             {role}
           </div>
         );
       })}
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-secondary/80 bg-secondary/40 text-foreground text-xs font-mono">
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-border text-muted-foreground text-xs font-mono">
         <span className="w-2 h-2 rounded-full bg-secondary-foreground/50" />
         Synthesist
       </div>
@@ -92,8 +92,8 @@ function DebateSessionView({ sessionId }: { sessionId: string }) {
                               <span className="text-xs font-medium">• {claim.claim}</span>
                               <span className={cn(
                                 "text-[10px] font-mono opacity-70 ml-3",
-                                claim.evidenceStrength === "strong_empirical" ? "text-emerald-400" :
-                                claim.evidenceStrength === "indirect_inference" ? "text-yellow-400" : "text-muted-foreground"
+                                claim.evidenceStrength === "strong_empirical" ? "text-foreground" :
+                                claim.evidenceStrength === "indirect_inference" ? "text-muted-foreground/80" : "text-muted-foreground"
                               )}>
                                 {claim.evidenceStrength.replace(/_/g, " ")}
                               </span>
@@ -118,22 +118,22 @@ function SessionCard({ session, index, isActive, onClick }: { session: DebateSes
     <button
       onClick={onClick}
       className={cn(
-        "w-full text-left px-4 py-3 rounded-lg border transition-all",
+        "w-full text-left px-4 py-3 rounded border transition-all",
         isActive
-          ? "border-primary/60 bg-primary/10 shadow-primary/10 shadow-lg"
-          : "border-border/40 bg-black/30 hover:border-primary/30 hover:bg-black/50"
+          ? "border-foreground/30 bg-secondary"
+          : "border-border bg-card hover:border-foreground/20"
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="font-mono text-xs text-muted-foreground mb-1">
           Debate #{index + 1}
         </div>
-        <Badge variant="outline" className={cn("text-[9px] font-mono uppercase shrink-0", session.status === "completed" ? "text-emerald-400 border-emerald-400/30" : "text-yellow-400 border-yellow-400/30")}>
+        <Badge variant="outline" className={cn("text-[9px] font-mono uppercase shrink-0", session.status === "completed" ? "text-foreground border-border" : "text-muted-foreground border-border")}>
           {session.status}
         </Badge>
       </div>
       <p className="text-sm text-foreground leading-snug line-clamp-2">{session.controversialQuestion}</p>
-      {isActive && <ChevronRight className="w-4 h-4 text-primary mt-2" />}
+      {isActive && <ChevronRight className="w-4 h-4 text-muted-foreground mt-2" />}
     </button>
   );
 }
@@ -169,7 +169,7 @@ export function DebateView({ runId }: { runId: string }) {
 
   if (sessions.length === 0 && !startMutation.isPending) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 glass-panel rounded-lg text-center space-y-4 border border-dashed border-border">
+      <div className="flex flex-col items-center justify-center p-12 panel rounded text-center space-y-4 border-dashed border-border">
         <MessageSquare className="w-12 h-12 text-muted-foreground mb-2" />
         <h3 className="text-xl font-medium">Controversy Matrix Offline</h3>
         <p className="text-muted-foreground text-sm max-w-md">
@@ -243,18 +243,18 @@ export function DebateView({ runId }: { runId: string }) {
       {activeSession && (
         <>
           {/* Controversy header */}
-          <div className="glass-panel p-6 rounded-lg border border-primary/20 bg-primary/5">
+          <div className="panel p-6 rounded border border-border">
             <div className="flex items-center gap-3 mb-2">
-              <ShieldAlert className="w-5 h-5 text-primary" />
+              <ShieldAlert className="w-5 h-5 text-muted-foreground" />
               <h4 className="font-mono text-sm uppercase tracking-widest text-muted-foreground">Core Controversy</h4>
-              <Badge variant="outline" className={cn("ml-auto text-[9px] font-mono uppercase", activeSession.status === "completed" ? "text-emerald-400 border-emerald-400/30" : "text-yellow-400 border-yellow-400/30")}>
+              <Badge variant="outline" className={cn("ml-auto text-[9px] font-mono uppercase", activeSession.status === "completed" ? "text-foreground border-border" : "text-muted-foreground border-border")}>
                 {activeSession.status}
               </Badge>
             </div>
             <h2 className="text-xl font-bold text-foreground leading-tight">{activeSession.controversialQuestion}</h2>
             <div className="flex gap-2 mt-4 flex-wrap">
               {activeSession.subTopics.map((t, i) => (
-                <Badge key={i} variant="outline" className="bg-black/50 text-xs">{t}</Badge>
+                <Badge key={i} variant="outline" className="text-xs">{t}</Badge>
               ))}
             </div>
           </div>
@@ -274,9 +274,9 @@ export function DebateView({ runId }: { runId: string }) {
             {/* Sidebar */}
             <div className="space-y-5">
               {/* Synthesis report */}
-              <Card className="border-border/50 bg-black/40">
-                <CardHeader className="pb-3 border-b border-border/30 py-3 px-4">
-                  <h4 className="font-mono text-sm text-primary uppercase tracking-widest">Synthesis Report</h4>
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-3 border-b border-border py-3 px-4">
+                  <h4 className="font-mono text-sm text-muted-foreground uppercase tracking-widest">Synthesis Report</h4>
                 </CardHeader>
                 <CardContent className="pt-3 px-4 pb-4 text-sm text-muted-foreground leading-relaxed">
                   {activeSession.finalReport || (
@@ -289,11 +289,11 @@ export function DebateView({ runId }: { runId: string }) {
               {activeSession.consensusPoints.length > 0 && (
                 <div>
                   <h5 className="font-mono text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-3">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Consensus Points
+                    <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground" /> Consensus Points
                   </h5>
                   <ul className="space-y-2">
                     {activeSession.consensusPoints.map((p, i) => (
-                      <li key={i} className="text-xs text-foreground bg-secondary/50 p-2.5 rounded border-l-2 border-emerald-500/50 leading-relaxed">
+                      <li key={i} className="text-xs text-foreground bg-secondary/50 p-2.5 rounded border-l-2 border-border leading-relaxed">
                         {p}
                       </li>
                     ))}
@@ -305,11 +305,11 @@ export function DebateView({ runId }: { runId: string }) {
               {activeSession.disagreementPoints.length > 0 && (
                 <div>
                   <h5 className="font-mono text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-3">
-                    <XCircle className="w-3.5 h-3.5 text-destructive" /> Disagreements
+                    <XCircle className="w-3.5 h-3.5 text-muted-foreground" /> Disagreements
                   </h5>
                   <ul className="space-y-2">
                     {activeSession.disagreementPoints.map((p, i) => (
-                      <li key={i} className="text-xs text-foreground bg-secondary/50 p-2.5 rounded border-l-2 border-destructive/50 leading-relaxed">
+                      <li key={i} className="text-xs text-foreground bg-secondary/50 p-2.5 rounded border-l-2 border-border leading-relaxed">
                         {p}
                       </li>
                     ))}
@@ -321,11 +321,11 @@ export function DebateView({ runId }: { runId: string }) {
               {activeSession.openQuestions && activeSession.openQuestions.length > 0 && (
                 <div>
                   <h5 className="font-mono text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-3">
-                    <HelpCircle className="w-3.5 h-3.5 text-yellow-500" /> Open Questions
+                    <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" /> Open Questions
                   </h5>
                   <ul className="space-y-2">
                     {activeSession.openQuestions.map((q, i) => (
-                      <li key={i} className="text-xs text-foreground bg-secondary/50 p-2.5 rounded border-l-2 border-yellow-500/50 leading-relaxed">
+                      <li key={i} className="text-xs text-foreground bg-secondary/50 p-2.5 rounded border-l-2 border-border leading-relaxed">
                         {q}
                       </li>
                     ))}

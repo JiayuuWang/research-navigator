@@ -47,7 +47,7 @@ export function PapersList({ topic, runId }: { topic: string; runId?: string }) 
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex items-center gap-3">
-          <FileText className="w-5 h-5 text-primary" />
+          <FileText className="w-5 h-5 text-muted-foreground" />
           <h3 className="text-xl font-mono text-foreground">Corpus Overview</h3>
           <Badge variant="primary" className="font-mono text-sm px-3 py-0.5">
             {data.total} Documents
@@ -62,8 +62,8 @@ export function PapersList({ topic, runId }: { topic: string; runId?: string }) 
               className={cn(
                 "px-2.5 py-1 rounded text-xs font-mono uppercase tracking-wider transition-colors border",
                 sortBy === s
-                  ? "bg-primary/20 text-primary border-primary/40"
-                  : "bg-black/30 text-muted-foreground border-border/40 hover:border-primary/30"
+                  ? "bg-secondary text-foreground border-border"
+                  : "bg-card text-muted-foreground border-border hover:text-foreground"
               )}
             >
               {s === "citationCount" ? "Citations" : "Year"}
@@ -80,7 +80,7 @@ export function PapersList({ topic, runId }: { topic: string; runId?: string }) 
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search papers by title or abstract..."
-          className="w-full pl-9 pr-4 py-2 bg-black/40 border border-border/60 rounded-md text-sm focus:outline-none focus:border-primary/60 font-mono placeholder:text-muted-foreground/50"
+          className="w-full pl-9 pr-4 py-2 bg-card border border-border rounded text-sm focus:outline-none focus:border-foreground/30 font-mono placeholder:text-muted-foreground/50"
         />
         {search && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">
@@ -94,17 +94,17 @@ export function PapersList({ topic, runId }: { topic: string; runId?: string }) 
         {filtered.map((paper) => (
           <Card
             key={paper.id}
-            className="hover:border-primary/40 transition-colors flex flex-col group bg-secondary/10"
+            className="hover:border-foreground/20 transition-colors flex flex-col group bg-card"
           >
             <CardContent className="p-5 flex flex-col h-full">
               {/* Title + year/citations */}
               <div className="flex justify-between items-start gap-3 mb-2">
-                <h4 className="text-sm font-semibold leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors flex-1" title={paper.title}>
+                <h4 className="text-sm font-semibold leading-snug line-clamp-2 text-foreground flex-1" title={paper.title}>
                   {paper.title}
                 </h4>
                 <div className="flex flex-col items-end gap-1 shrink-0 font-mono">
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">{paper.year || "N/A"}</Badge>
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-primary/10 border-primary/30 text-primary">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-muted-foreground">
                     <Quote className="w-2.5 h-2.5 mr-1" />
                     {paper.citationCount ?? 0}
                   </Badge>
@@ -131,7 +131,7 @@ export function PapersList({ topic, runId }: { topic: string; runId?: string }) 
                     href={paper.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="ml-auto flex items-center gap-1 text-xs text-primary hover:underline font-mono"
+                    className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline font-mono transition-colors"
                   >
                     Paper <ExternalLink className="w-3 h-3" />
                   </a>

@@ -9,16 +9,16 @@ import { Activity, Play, TrendingUp, Zap, Users, Layers, Building2 } from "lucid
 import { useQueryClient } from "@tanstack/react-query";
 
 const TREND_COLORS = [
-  "hsl(170,80%,50%)",
-  "hsl(270,70%,60%)",
-  "hsl(45,90%,50%)",
-  "hsl(330,80%,60%)",
-  "hsl(210,90%,60%)",
+  "hsl(0,0%,85%)",
+  "hsl(0,0%,65%)",
+  "hsl(0,0%,50%)",
+  "hsl(0,0%,38%)",
+  "hsl(0,0%,28%)",
 ];
 
 const CLUSTER_COLORS = [
-  "#00f0b0", "#9b59d0", "#f0b000", "#d04040", "#4080d0",
-  "#40d080", "#d08040", "#8040d0",
+  "#e0e0e0", "#b0b0b0", "#888888", "#606060", "#404040",
+  "#d0d0d0", "#989898", "#707070",
 ];
 
 function ClusterBubbleChart({ clusters }: { clusters: Array<{ id: string; label: string; paperCount: number; growthRate: number }> }) {
@@ -36,10 +36,10 @@ function ClusterBubbleChart({ clusters }: { clusters: Array<{ id: string; label:
     if (!active || !payload?.[0]) return null;
     const d = payload[0].payload;
     return (
-      <div className="glass-panel border border-border rounded p-2 text-xs font-mono">
-        <div className="font-bold text-primary mb-1">{d.label}</div>
+      <div className="bg-card border border-border rounded p-2 text-xs font-mono">
+        <div className="font-bold text-foreground mb-1">{d.label}</div>
         <div className="text-muted-foreground">{d.paperCount} papers</div>
-        <div className={d.growthRate >= 0 ? "text-emerald-400" : "text-red-400"}>
+        <div className={d.growthRate >= 0 ? "text-foreground" : "text-muted-foreground"}>
           {d.growthRate >= 0 ? "+" : ""}{d.growthRate}% growth
         </div>
       </div>
@@ -116,7 +116,7 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
 
   if (!data || data.keywordTrends.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 glass-panel rounded-lg text-center space-y-4 border border-dashed border-border">
+      <div className="flex flex-col items-center justify-center p-12 panel rounded text-center space-y-4 border-dashed border-border">
         <Activity className="w-12 h-12 text-muted-foreground mb-2" />
         <h3 className="text-xl font-medium">Trend Analysis Not Initialized</h3>
         <p className="text-muted-foreground text-sm max-w-md">
@@ -144,7 +144,7 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
     <div className="space-y-8">
       <div className="flex justify-between items-end">
         <h3 className="text-xl font-mono text-foreground flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-primary" />
+          <TrendingUp className="w-5 h-5 text-muted-foreground" />
           Temporal Trend Vectors
         </h3>
         <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
@@ -167,7 +167,7 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
 
       {/* Row 1: Keyword trajectories + AI narrative */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-border/50 bg-black/20">
+        <Card className="lg:col-span-2 border-border bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-mono text-muted-foreground uppercase tracking-widest">
               Keyword Trajectories (Top 5)
@@ -215,9 +215,9 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
           </CardContent>
         </Card>
 
-        <Card className="border-primary/20 bg-primary/5">
+        <Card className="border-border bg-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-mono text-primary uppercase tracking-widest flex items-center gap-2">
+            <CardTitle className="text-xs font-mono text-muted-foreground uppercase tracking-widest flex items-center gap-2">
               <Zap className="w-4 h-4" /> AI Narrative Synthesis
             </CardTitle>
           </CardHeader>
@@ -229,7 +229,7 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
               <h4 className="text-xs font-mono text-muted-foreground uppercase border-b border-border/50 pb-1">Emerging Clusters</h4>
               {data.clusters.slice(0, 4).map((cluster, i) => (
                 <div key={cluster.id} className="text-xs">
-                  <div className="flex items-center gap-1.5 font-semibold text-accent mb-0.5">
+                  <div className="flex items-center gap-1.5 font-semibold text-foreground mb-0.5">
                     <div
                       className="w-2 h-2 rounded-full flex-shrink-0"
                       style={{ backgroundColor: CLUSTER_COLORS[i % CLUSTER_COLORS.length] }}
@@ -251,7 +251,7 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
 
       {/* Row 2: Cluster bubble chart + Author bar chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-border/50 bg-black/20">
+        <Card className="border-border bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-mono text-muted-foreground uppercase tracking-widest flex items-center gap-2">
               <Layers className="w-3.5 h-3.5" /> Cluster Landscape
@@ -271,7 +271,7 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 bg-black/20">
+        <Card className="border-border bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-mono text-muted-foreground uppercase tracking-widest flex items-center gap-2">
               <Users className="w-3.5 h-3.5" /> Active Researchers
@@ -307,7 +307,7 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
                       labelFormatter={(label) => authorChartData.find((a) => a.name === label)?.fullName ?? label}
                     />
                     <Legend wrapperStyle={{ fontSize: "11px", fontFamily: "monospace" }} />
-                    <Bar dataKey="paperCount" name="Papers in Run" fill="hsl(170,80%,50%)" radius={[0, 3, 3, 0]} maxBarSize={20} />
+                    <Bar dataKey="paperCount" name="Papers in Run" fill="hsl(0,0%,70%)" radius={[0, 3, 3, 0]} maxBarSize={20} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -324,7 +324,7 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
       </div>
 
       {/* Row 3: Institution Rankings */}
-      <Card className="border-border/50 bg-black/20">
+      <Card className="border-border bg-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-xs font-mono text-muted-foreground uppercase tracking-widest flex items-center gap-2">
             <Building2 className="w-3.5 h-3.5" /> Institution Rankings
@@ -363,8 +363,8 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
                     labelFormatter={(label) => institutionChartData.find((i) => i.name === label)?.fullName ?? label}
                   />
                   <Legend wrapperStyle={{ fontSize: "11px", fontFamily: "monospace" }} />
-                  <Bar dataKey="paperCount" name="Papers" fill="hsl(210,90%,60%)" radius={[0, 3, 3, 0]} maxBarSize={22} />
-                  <Bar dataKey="citationCount" name="Citations" fill="hsl(45,90%,50%)" radius={[0, 3, 3, 0]} maxBarSize={22} />
+                  <Bar dataKey="paperCount" name="Papers" fill="hsl(0,0%,70%)" radius={[0, 3, 3, 0]} maxBarSize={22} />
+                  <Bar dataKey="citationCount" name="Citations" fill="hsl(0,0%,50%)" radius={[0, 3, 3, 0]} maxBarSize={22} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -381,7 +381,7 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
 
       {/* Row 3: Growth ranking table */}
       {data.keywordTrends.length > 0 && (
-        <Card className="border-border/50 bg-black/20">
+        <Card className="border-border bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-mono text-muted-foreground uppercase tracking-widest">
               Keyword Growth Rankings
@@ -400,7 +400,7 @@ export function TrendAnalysisView({ runId }: { runId: string }) {
                       {kt.keyword}
                     </span>
                   </div>
-                  <div className={`font-mono text-[10px] ${kt.growthRate > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  <div className={`font-mono text-[10px] ${kt.growthRate > 0 ? "text-foreground" : "text-muted-foreground"}`}>
                     {kt.growthRate > 0 ? "+" : ""}{(kt.growthRate * 100).toFixed(0)}% growth
                   </div>
                   <div className="text-muted-foreground text-[10px]">Peak: {kt.peakYear}</div>

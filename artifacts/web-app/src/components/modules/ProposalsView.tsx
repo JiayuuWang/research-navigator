@@ -18,7 +18,7 @@ export function ProposalsView({ runId }: { runId: string }) {
 
   if (proposals.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 glass-panel rounded-lg text-center space-y-4 border border-dashed border-border">
+      <div className="flex flex-col items-center justify-center p-12 panel rounded text-center space-y-4 border-dashed border-border">
         <Lightbulb className="w-12 h-12 text-muted-foreground mb-2" />
         <h3 className="text-xl font-medium">No Proposals Generated</h3>
         <p className="text-muted-foreground text-sm max-w-md">Synthesize identified gaps into structured research proposals suitable for funding bodies.</p>
@@ -40,22 +40,22 @@ export function ProposalsView({ runId }: { runId: string }) {
     <div className="space-y-8">
       <div className="flex justify-between items-end mb-2">
         <h3 className="text-xl font-mono text-foreground flex items-center gap-2">
-          <Lightbulb className="w-5 h-5 text-accent" />
+          <Lightbulb className="w-5 h-5 text-muted-foreground" />
           Generated Research Proposals
         </h3>
       </div>
 
       <div className="space-y-6">
         {proposals.map((prop, idx) => (
-          <Card key={prop.id} className="p-6 border-l-4 border-l-accent bg-gradient-to-r from-accent/5 to-transparent">
+          <Card key={prop.id} className="p-6 border-l-4 border-l-border bg-card">
             <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
               <div>
-                <div className="font-mono text-xs text-accent mb-2">PROP_{idx.toString().padStart(3, '0')}</div>
+                <div className="font-mono text-xs text-muted-foreground mb-2">PROP_{idx.toString().padStart(3, '0')}</div>
                 <h4 className="text-xl font-bold text-foreground leading-tight max-w-3xl">{prop.title}</h4>
               </div>
               <div className="flex flex-col items-end shrink-0">
                 <span className="text-[10px] uppercase font-mono text-muted-foreground mb-1">Novelty Index</span>
-                <Badge variant="outline" className="font-mono text-lg border-accent/50 text-accent px-3">
+                <Badge variant="outline" className="font-mono text-lg border-border text-foreground px-3">
                   {formatScore(prop.noveltyScore)}
                 </Badge>
               </div>
@@ -92,10 +92,10 @@ export function ProposalsView({ runId }: { runId: string }) {
                   <h5 className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-2 border-b border-border/50 pb-1">
                     Expected Contributions
                   </h5>
-                  <ul className="list-none space-y-1.5 text-primary/90">
+                  <ul className="list-none space-y-1.5 text-foreground/80">
                     {prop.expectedContributions.map((ec, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <span className="text-primary mt-0.5">•</span> <span>{ec}</span>
+                        <span className="text-muted-foreground mt-0.5">•</span> <span>{ec}</span>
                       </li>
                     ))}
                   </ul>

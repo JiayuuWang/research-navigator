@@ -8,7 +8,7 @@ import { format } from "date-fns";
 function SectionIcon({ section }: { section: number }) {
   const icons = [BookOpen, TrendingUp, TrendingUp, Target, MessageSquare, CheckCircle];
   const Icon = icons[section - 1] ?? BookOpen;
-  return <Icon className="w-4 h-4 text-primary shrink-0" />;
+  return <Icon className="w-4 h-4 text-muted-foreground shrink-0" />;
 }
 
 export function ReportView({ runId }: { runId: string }) {
@@ -96,15 +96,15 @@ export function ReportView({ runId }: { runId: string }) {
     body { font-family: Georgia, 'Times New Roman', serif; background: #0a0a0f; color: #e8eaf0; line-height: 1.7; padding: 2rem; }
     .container { max-width: 820px; margin: 0 auto; }
     header { border-bottom: 1px solid #1e293b; padding-bottom: 2rem; margin-bottom: 3rem; }
-    .label { font-family: 'Courier New', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.2em; color: #20b2aa; margin-bottom: 0.5rem; }
+    .label { font-family: 'Courier New', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.2em; color: #a0a0a0; margin-bottom: 0.5rem; }
     h1 { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.03em; color: #f1f5f9; margin-bottom: 0.75rem; }
     .meta { font-family: 'Courier New', monospace; font-size: 0.75rem; color: #64748b; display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 0.5rem; }
     section { margin-bottom: 3rem; }
-    h2 { font-family: 'Courier New', monospace; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: #20b2aa; border-bottom: 1px solid rgba(32,178,170,0.2); padding-bottom: 0.5rem; margin-bottom: 1.25rem; }
+    h2 { font-family: 'Courier New', monospace; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: #a0a0a0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-bottom: 1.25rem; }
     p { font-size: 0.95rem; color: #cbd5e1; }
     ol { padding-left: 1.5rem; }
     ol li { margin-bottom: 0.75rem; font-size: 0.95rem; color: #cbd5e1; }
-    .rec-num { font-family: 'Courier New', monospace; font-size: 0.7rem; background: rgba(139,92,246,0.15); color: #a78bfa; padding: 2px 6px; border-radius: 3px; margin-right: 0.5rem; }
+    .rec-num { font-family: 'Courier New', monospace; font-size: 0.7rem; background: rgba(255,255,255,0.08); color: #e0e0e0; padding: 2px 6px; border-radius: 3px; margin-right: 0.5rem; }
     footer { border-top: 1px solid #1e293b; padding-top: 1rem; margin-top: 3rem; display: flex; justify-content: space-between; font-family: 'Courier New', monospace; font-size: 0.65rem; color: #475569; }
     @media print { body { background: #fff; color: #111; } h1, h2 { color: #111; } .meta, footer { color: #555; } p, ol li { color: #333; } }
   </style>
@@ -164,7 +164,7 @@ export function ReportView({ runId }: { runId: string }) {
 
   if (!hasContent) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 glass-panel rounded-lg text-center space-y-4 border border-dashed border-border">
+      <div className="flex flex-col items-center justify-center p-12 panel rounded text-center space-y-4 border-dashed border-border">
         <FileText className="w-12 h-12 text-muted-foreground mb-2" />
         <h3 className="text-xl font-medium">Final Report Not Compiled</h3>
         <p className="text-muted-foreground text-sm max-w-md">
@@ -209,7 +209,7 @@ export function ReportView({ runId }: { runId: string }) {
       {/* Document header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <div className="font-mono text-primary text-xs uppercase tracking-widest mb-2">Intelligence Dossier</div>
+          <div className="font-mono text-muted-foreground text-xs uppercase tracking-widest mb-2">Intelligence Dossier</div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground leading-tight">{data.topic}</h2>
           <div className="text-sm text-muted-foreground mt-2 font-mono flex flex-wrap gap-x-4 gap-y-1">
             <span>ID: {data.runId.split("-")[0]}</span>
@@ -256,12 +256,12 @@ export function ReportView({ runId }: { runId: string }) {
       </div>
 
       {/* Report card */}
-      <Card className="bg-black/50 border-border shadow-2xl">
+      <Card className="bg-card border-border">
         <div className="p-8 sm:p-10 space-y-10 font-serif leading-relaxed">
 
           {sections.map(({ num, title, content }) => (
             <section key={num}>
-              <h3 className="text-base font-mono font-bold uppercase tracking-widest text-primary mb-4 border-b border-primary/20 pb-2 flex items-center gap-2">
+              <h3 className="text-base font-mono font-bold uppercase tracking-widest text-muted-foreground mb-4 border-b border-border pb-2 flex items-center gap-2">
                 <SectionIcon section={num} />
                 {title}
               </h3>
@@ -272,14 +272,14 @@ export function ReportView({ runId }: { runId: string }) {
           {/* Recommendations */}
           {data.recommendations.length > 0 && (
             <section>
-              <h3 className="text-base font-mono font-bold uppercase tracking-widest text-accent mb-4 border-b border-accent/20 pb-2 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-accent shrink-0" />
+              <h3 className="text-base font-mono font-bold uppercase tracking-widest text-muted-foreground mb-4 border-b border-border pb-2 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-muted-foreground shrink-0" />
                 Strategic Recommendations
               </h3>
               <ol className="space-y-4 list-none">
                 {data.recommendations.map((rec, i) => (
                   <li key={i} className="flex items-start gap-4">
-                    <span className="font-mono text-xs text-accent bg-accent/10 px-2 py-1 rounded shrink-0 mt-0.5">
+                    <span className="font-mono text-xs text-muted-foreground bg-secondary px-2 py-1 rounded shrink-0 mt-0.5">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <span className="text-foreground/90 text-sm leading-relaxed">{rec}</span>

@@ -13,11 +13,11 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
     <div className="space-y-1">
       <div className="flex justify-between text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
         <span>{label}</span>
-        <span className={color}>{formatScore(value)}</span>
+        <span className="text-muted-foreground">{formatScore(value)}</span>
       </div>
-      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-border rounded-full overflow-hidden">
         <div
-          className={cn("h-full rounded-full transition-all", color === "text-accent" ? "bg-accent" : color === "text-primary" ? "bg-primary" : "bg-foreground/60")}
+          className="h-full rounded-full transition-all bg-foreground/60"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -60,7 +60,7 @@ export function ResearchGapsView({ runId }: { runId: string }) {
 
   if (gaps.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 glass-panel rounded-lg text-center space-y-4 border border-dashed border-border">
+      <div className="flex flex-col items-center justify-center p-12 panel rounded text-center space-y-4 border-dashed border-border">
         <Target className="w-12 h-12 text-muted-foreground mb-2" />
         <h3 className="text-xl font-medium">Gap Analysis Not Initialized</h3>
         <p className="text-muted-foreground text-sm max-w-md">
@@ -101,15 +101,15 @@ export function ResearchGapsView({ runId }: { runId: string }) {
     <div className="space-y-6">
       {/* Header stats */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="glass-panel p-4 rounded-lg border border-border/50 text-center">
-          <div className="text-2xl font-mono font-bold text-primary">{gaps.length}</div>
+        <div className="panel p-4 rounded text-center">
+          <div className="text-2xl font-mono font-bold text-foreground">{gaps.length}</div>
           <div className="text-xs uppercase font-mono text-muted-foreground mt-1">Gaps Detected</div>
         </div>
-        <div className="glass-panel p-4 rounded-lg border border-border/50 text-center">
-          <div className="text-2xl font-mono font-bold text-accent">{formatScore(avgNovelty)}</div>
+        <div className="panel p-4 rounded text-center">
+          <div className="text-2xl font-mono font-bold text-foreground">{formatScore(avgNovelty)}</div>
           <div className="text-xs uppercase font-mono text-muted-foreground mt-1">Avg Novelty</div>
         </div>
-        <div className="glass-panel p-4 rounded-lg border border-border/50 text-center">
+        <div className="panel p-4 rounded text-center">
           <div className="text-2xl font-mono font-bold text-foreground">{formatScore(avgImpact)}</div>
           <div className="text-xs uppercase font-mono text-muted-foreground mt-1">Avg Impact</div>
         </div>
@@ -124,7 +124,7 @@ export function ResearchGapsView({ runId }: { runId: string }) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Filter gaps..."
-            className="w-full pl-9 pr-3 py-2 bg-black/40 border border-border/60 rounded-md text-sm focus:outline-none focus:border-primary/60 font-mono placeholder:text-muted-foreground/50"
+            className="w-full pl-9 pr-3 py-2 bg-card border border-border rounded text-sm focus:outline-none focus:border-foreground/30 font-mono placeholder:text-muted-foreground/50"
           />
         </div>
         <div className="flex gap-2 items-center">
@@ -137,8 +137,8 @@ export function ResearchGapsView({ runId }: { runId: string }) {
               className={cn(
                 "px-3 py-1 rounded text-xs font-mono uppercase tracking-wider transition-colors",
                 sortKey === key
-                  ? "bg-primary/20 text-primary border border-primary/40"
-                  : "bg-black/30 text-muted-foreground border border-border/40 hover:border-primary/30"
+                  ? "bg-secondary text-foreground border border-border"
+                  : "bg-card text-muted-foreground border border-border hover:text-foreground"
               )}
             >
               {label}
@@ -168,16 +168,16 @@ export function ResearchGapsView({ runId }: { runId: string }) {
             <Card
               key={gap.id}
               className={cn(
-                "relative overflow-hidden group transition-all duration-200 bg-secondary/20 cursor-pointer",
-                isExpanded ? "border-primary/60 shadow-primary/20 shadow-lg" : "hover:border-primary/40"
+                "relative overflow-hidden group transition-all duration-200 bg-card cursor-pointer",
+                isExpanded ? "border-border shadow-sm" : "hover:border-foreground/30"
               )}
               onClick={() => setExpandedId(isExpanded ? null : gap.id)}
             >
-              <div className="absolute top-0 left-0 w-1 h-full bg-primary/50 group-hover:bg-primary transition-colors" />
+              <div className="absolute top-0 left-0 w-1 h-full bg-border group-hover:bg-foreground/30 transition-colors" />
               <CardContent className="p-5 pt-5">
                 {/* ID + type badge */}
                 <div className="flex justify-between items-start mb-3">
-                  <div className="font-mono text-xs text-primary bg-primary/10 px-2 py-1 rounded">
+                  <div className="font-mono text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
                     GAP_{idx.toString().padStart(3, "0")}
                   </div>
                   <Badge variant="outline" className="text-[10px] uppercase font-mono">
@@ -192,9 +192,9 @@ export function ResearchGapsView({ runId }: { runId: string }) {
 
                 {/* Score bars */}
                 <div className="space-y-2 pt-3 border-t border-border/50">
-                  <ScoreBar label="Novelty" value={gap.noveltyScore ?? 0} color="text-accent" />
-                  <ScoreBar label="Impact" value={gap.impactScore ?? 0} color="text-primary" />
-                  <ScoreBar label="Feasibility" value={gap.feasibilityScore ?? 0} color="text-foreground" />
+                  <ScoreBar label="Novelty" value={gap.noveltyScore ?? 0} color="text-muted-foreground" />
+                  <ScoreBar label="Impact" value={gap.impactScore ?? 0} color="text-muted-foreground" />
+                  <ScoreBar label="Feasibility" value={gap.feasibilityScore ?? 0} color="text-muted-foreground" />
                 </div>
 
                 {/* Expanded: supporting evidence */}

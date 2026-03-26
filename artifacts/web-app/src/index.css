@@ -22,11 +22,11 @@
 
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-primary-border: hsl(var(--primary) / 0.5);
+  --color-primary-border: hsl(var(--primary) / 0.4);
 
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
-  
+
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
 
@@ -41,41 +41,43 @@
 
   --radius-sm: 2px;
   --radius-md: 4px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
 }
 
 :root {
-  /* Forced Dark Mode - Scientific Intelligence Aesthetic */
-  --background: 240 10% 4%;
-  --foreground: 210 20% 98%;
-  
-  --card: 240 10% 6%;
-  --card-foreground: 210 20% 98%;
-  --card-border: 240 10% 12%;
+  /* Pure dark — black/white/gray only */
+  --background: 0 0% 4%;
+  --foreground: 0 0% 95%;
 
-  --popover: 240 10% 6%;
-  --popover-foreground: 210 20% 98%;
-  --popover-border: 240 10% 12%;
+  --card: 0 0% 6%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 0 0% 12%;
 
-  --primary: 170 80% 40%;
-  --primary-foreground: 170 100% 10%;
+  --popover: 0 0% 6%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 0 0% 12%;
 
-  --secondary: 240 10% 12%;
-  --secondary-foreground: 210 20% 98%;
+  /* Primary = white */
+  --primary: 0 0% 95%;
+  --primary-foreground: 0 0% 5%;
 
-  --muted: 240 10% 10%;
-  --muted-foreground: 240 5% 65%;
+  --secondary: 0 0% 10%;
+  --secondary-foreground: 0 0% 80%;
 
-  --accent: 270 70% 60%;
-  --accent-foreground: 210 20% 98%;
+  --muted: 0 0% 8%;
+  --muted-foreground: 0 0% 45%;
 
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 210 20% 98%;
+  /* Accent = slightly lighter gray */
+  --accent: 0 0% 16%;
+  --accent-foreground: 0 0% 90%;
 
-  --border: 240 10% 15%;
-  --input: 240 10% 15%;
-  --ring: 170 80% 40%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 0 0% 14%;
+  --input: 0 0% 12%;
+  --ring: 0 0% 60%;
 }
 
 @layer base {
@@ -84,28 +86,17 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    background-image: 
-      linear-gradient(to right, hsl(var(--border) / 0.3) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--border) / 0.3) 1px, transparent 1px);
-    background-size: 40px 40px;
-    background-position: center center;
   }
-  
   h1, h2, h3, h4, h5, h6 {
     @apply tracking-tight;
   }
 }
 
 @layer utilities {
-  .glass-panel {
-    @apply bg-card/80 backdrop-blur-md border border-card-border shadow-2xl;
-  }
-  
-  .tech-border {
-    @apply border border-primary/30 shadow-[0_0_15px_rgba(32,178,170,0.1)];
+  .panel {
+    @apply bg-card border border-card-border;
   }
 
-  .text-glow {
-    text-shadow: 0 0 10px hsl(var(--primary) / 0.5);
-  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
