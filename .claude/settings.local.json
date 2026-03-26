@@ -7,7 +7,11 @@
       "WebSearch",
       "WebFetch(domain:conductor.build)",
       "mcp__ide__executeCode",
-      "WebFetch(domain:www.opencode.ai)"
+      "WebFetch(domain:www.opencode.ai)",
+      "Bash(pnpm run:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm --filter @workspace/web-app exec tsc -p tsconfig.json --noEmit)",
+      "Bash(pnpm --filter @workspace/api-server exec tsc -p tsconfig.json --noEmit)"
     ]
   }
 }
