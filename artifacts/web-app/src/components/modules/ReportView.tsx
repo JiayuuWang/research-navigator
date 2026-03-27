@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import { useGetReport, useGenerateReport } from "@workspace/api-client-react";
 import { Card, Button } from "@/components/ui";
-import { FileText, Download, Play, CheckCircle, RefreshCw, BookOpen, TrendingUp, Target, MessageSquare, Code2 } from "lucide-react";
+import { FileText, Download, Play, CheckCircle, RefreshCw, BookOpen, TrendingUp, Target, MessageSquare, Code2, Printer } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 
@@ -149,6 +149,79 @@ export function ReportView({ runId }: { runId: string }) {
     URL.revokeObjectURL(url);
   }, [data]);
 
+  const handleExportPdf = useCallback(() => {
+    if (!data) return;
+
+    const sections = [
+      { title: "I. Executive Overview", content: data.overview },
+      { title: "II. Network Topology", content: data.graphInsights },
+      { title: "III. Temporal Trend Vectors", content: data.trendsSummary },
+      { title: "IV. Identified Anomalies & Gaps", content: data.gapsSummary },
+      { title: "V. Core Controversies", content: data.controversySummary },
+    ];
+
+    const printHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Research Intelligence Dossier — ${escapeHtml(data.topic)}</title>
+  <style>
+    @page { size: A4; margin: 2cm 2.5cm; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, 'Times New Roman', serif; color: #111; line-height: 1.75; font-size: 11pt; }
+    .container { max-width: 100%; }
+    header { border-bottom: 2px solid #111; padding-bottom: 1.5rem; margin-bottom: 2rem; }
+    .label { font-family: 'Courier New', monospace; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.2em; color: #666; margin-bottom: 0.5rem; }
+    h1 { font-size: 22pt; font-weight: 700; letter-spacing: -0.02em; color: #111; margin-bottom: 0.5rem; }
+    .meta { font-family: 'Courier New', monospace; font-size: 8pt; color: #666; display: flex; gap: 1.5rem; }
+    section { margin-bottom: 2rem; page-break-inside: avoid; }
+    h2 { font-family: 'Courier New', monospace; font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 4pt; margin-bottom: 10pt; }
+    p { font-size: 11pt; color: #222; margin-bottom: 8pt; text-align: justify; }
+    ol { padding-left: 1.2rem; }
+    ol li { margin-bottom: 8pt; font-size: 11pt; color: #222; }
+    .rec-num { font-family: 'Courier New', monospace; font-size: 8pt; background: #eee; color: #333; padding: 1px 5px; border-radius: 2px; margin-right: 6px; }
+    footer { border-top: 1px solid #ccc; padding-top: 8pt; margin-top: 2rem; display: flex; justify-content: space-between; font-family: 'Courier New', monospace; font-size: 7pt; color: #999; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="label">Research Intelligence Dossier</div>
+      <h1>${escapeHtml(data.topic)}</h1>
+      <div class="meta">
+        <span>ID: ${escapeHtml(data.runId.split("-")[0] ?? "")}</span>
+        <span>Generated: ${escapeHtml(format(new Date(data.generatedAt), "MMMM dd, yyyy HH:mm"))}</span>
+        <span>Corpus: ${data.totalPapers} documents</span>
+      </div>
+    </header>
+    ${sections.map(({ title, content }) => `
+    <section>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(content)}</p>
+    </section>`).join("")}
+    ${data.recommendations.length > 0 ? `
+    <section>
+      <h2>Strategic Recommendations</h2>
+      <ol style="list-style:none; padding:0;">
+        ${data.recommendations.map((r, i) => `<li><span class="rec-num">${String(i + 1).padStart(2, "0")}</span>${escapeHtml(r)}</li>`).join("")}
+      </ol>
+    </section>` : ""}
+    <footer>
+      <span>Research Navigator Intelligence Platform</span>
+      <span>${format(new Date(data.generatedAt), "yyyy-MM-dd")}</span>
+    </footer>
+  </div>
+  <script>window.onload = function() { window.print(); }</script>
+</body>
+</html>`;
+
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(printHtml);
+      printWindow.document.close();
+    }
+  }, [data]);
+
   if (isLoading) {
     return (
       <div className="h-64 flex items-center justify-center font-mono text-muted-foreground">
@@ -251,6 +324,14 @@ export function ReportView({ runId }: { runId: string }) {
             className="font-mono text-xs"
           >
             <Code2 className="w-3.5 h-3.5 mr-1.5" /> Export .html
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            className="font-mono text-xs"
+          >
+            <Printer className="w-3.5 h-3.5 mr-1.5" /> Export PDF
           </Button>
         </div>
       </div>

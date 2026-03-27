@@ -367,23 +367,62 @@ router.post("/:runId/compute", async (req, res) => {
     }
     await Promise.all(clusterInserts);
 
-    // Generate AI narrative
+    // Generate AI narrative with statistical backing
     const topKws = topKeywords.slice(0, 10).join(", ");
     const growthStats = clusterSeeds.slice(0, 3).map((kw) => {
       const cnt = papers.filter((p) => `${p.title ?? ""} ${p.abstract ?? ""}`.toLowerCase().includes(kw)).length;
       return `${kw} (${cnt} papers)`;
     }).join(", ");
 
+    // Compute statistical summaries for the prompt
+    const recentPapers = papers.filter((p) => (p.year ?? 0) >= 2023);
+    const olderPapers = papers.filter((p) => (p.year ?? 0) >= 2020 && (p.year ?? 0) < 2023);
+    const fieldGrowthRate = olderPapers.length > 0
+      ? ((recentPapers.length - olderPapers.length) / olderPapers.length * 100).toFixed(1)
+      : "N/A";
+
+    // Compute per-cluster growth with simple statistical significance
+    const clusterStats = clusterSeeds.slice(0, 5).map((kw) => {
+      const matchAll = papers.filter((p) => `${p.title ?? ""} ${p.abstract ?? ""}`.toLowerCase().includes(kw));
+      const matchRecent = matchAll.filter((p) => (p.year ?? 0) >= 2023).length;
+      const matchOlder = matchAll.filter((p) => (p.year ?? 0) >= 2020 && (p.year ?? 0) < 2023).length;
+      const growth = matchOlder > 0 ? ((matchRecent - matchOlder) / matchOlder * 100).toFixed(0) : matchRecent > 0 ? "100+" : "0";
+      // Simple chi-square-like significance estimate
+      const expected = matchAll.length / 2;
+      const chiSq = expected > 0 ? Math.pow(matchRecent - expected, 2) / expected : 0;
+      const significant = chiSq > 3.84; // p < 0.05
+      const pValue = significant ? (chiSq > 6.63 ? "p<0.01" : "p<0.05") : "n.s.";
+      return `"${kw}": ${matchAll.length} papers total, ${growth}% growth recent vs 2020-2022, ${pValue}`;
+    }).join("\n");
+
+    const avgCitationsPerPaper = papers.length > 0
+      ? (papers.reduce((s, p) => s + (p.citationCount ?? 0), 0) / papers.length).toFixed(1)
+      : "0";
+
     const narrative = await openai.chat.completions.create({
       model: "gpt-5.2",
-      max_completion_tokens: 600,
+      max_completion_tokens: 800,
       messages: [{
         role: "user",
         content: `Research field: "${run.topic}" (${papers.length} papers analyzed)
 Top emerging keywords: ${topKws}
 Leading clusters: ${growthStats}
 
-Write a 4-5 sentence trend analysis. Include specific growth statistics, mention the dominant keywords, identify 2-3 major research directions, and use precise language. Format: plain text, no bullet points.`,
+Statistical context:
+- Overall field growth: ${fieldGrowthRate}% (recent vs 2020-2022 period)
+- Average citations per paper: ${avgCitationsPerPaper}
+- Recent papers (2023+): ${recentPapers.length}, Older baseline (2020-2022): ${olderPapers.length}
+
+Per-cluster statistics:
+${clusterStats}
+
+Write a 5-6 sentence trend analysis as a data-driven narrative. Requirements:
+1. Include specific growth percentages with statistical significance markers (e.g., "grew 47% over the baseline period, significantly above the field average (p<0.05)")
+2. Name the dominant research keywords and their trajectories
+3. Identify 2-3 major research directions with quantitative backing
+4. Use precise academic language — no jargon for jargon's sake
+5. Ground every claim in the statistics provided
+Format: plain text, no bullet points, no markdown.`,
       }],
     });
 

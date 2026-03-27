@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useGetResearchGaps, useAnalyzeResearchGaps } from "@workspace/api-client-react";
 import { Card, CardContent, Button, Badge } from "@/components/ui";
-import { Target, Play, TrendingUp, Zap, Search, ArrowUpDown } from "lucide-react";
+import { Target, Play, TrendingUp, Zap, Search, ArrowUpDown, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatScore, cn } from "@/lib/utils";
 
@@ -36,6 +36,45 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "impactScore", label: "Impact" },
   { key: "feasibilityScore", label: "Feasibility" },
 ];
+
+function ScoringMethodology() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-border rounded bg-secondary/20 p-3">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <div className="flex items-center gap-2">
+          <Info className="w-3.5 h-3.5 text-muted-foreground" />
+          <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Scoring Methodology</span>
+        </div>
+        {open ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+      </button>
+      {open && (
+        <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="p-2 border border-border/30 rounded">
+              <div className="font-semibold text-foreground mb-1">Novelty (0-1)</div>
+              <p>Measures how distinct this gap is from existing work. Based on topic model distance from existing clusters and absence in citation network dense regions.</p>
+            </div>
+            <div className="p-2 border border-border/30 rounded">
+              <div className="font-semibold text-foreground mb-1">Impact (0-1)</div>
+              <p>Estimated potential impact based on citation patterns of neighboring research, field growth velocity, and number of downstream applications.</p>
+            </div>
+            <div className="p-2 border border-border/30 rounded">
+              <div className="font-semibold text-foreground mb-1">Feasibility (0-1)</div>
+              <p>Assesses practical feasibility considering available methods, data accessibility, and existing methodological foundations in the corpus.</p>
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground/60 pt-1">
+            Scores are AI-generated based on corpus analysis using topic modeling, citation network density, and method-problem matrix analysis.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ResearchGapsView({ runId }: { runId: string }) {
   const { data, isLoading } = useGetResearchGaps(runId);
@@ -114,6 +153,9 @@ export function ResearchGapsView({ runId }: { runId: string }) {
           <div className="text-xs uppercase font-mono text-muted-foreground mt-1">Avg Impact</div>
         </div>
       </div>
+
+      {/* Scoring Framework */}
+      <ScoringMethodology />
 
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">

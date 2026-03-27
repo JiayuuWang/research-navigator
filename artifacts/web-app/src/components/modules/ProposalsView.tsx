@@ -1,9 +1,117 @@
-import React from "react";
-import { useGetProposals, useGenerateProposals } from "@workspace/api-client-react";
+import React, { useState } from "react";
+import { useGetProposals, useGenerateProposals, useListPapers } from "@workspace/api-client-react";
 import { Card, Button, Badge } from "@/components/ui";
-import { Lightbulb, Play, BookOpen, AlertTriangle, PenTool } from "lucide-react";
+import { Lightbulb, Play, BookOpen, AlertTriangle, PenTool, FileText, ChevronDown, ChevronUp, ExternalLink, Info, Quote } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatScore } from "@/lib/utils";
+import { formatScore, cn } from "@/lib/utils";
+
+const NOVELTY_FRAMEWORK = [
+  { dimension: "Methodological Originality", weight: "30%", desc: "Does the proposal introduce new methods or novel combinations of existing techniques?" },
+  { dimension: "Problem Space Coverage", weight: "25%", desc: "Does it address an underexplored region in the research landscape identified from citation/topic analysis?" },
+  { dimension: "Cross-domain Bridging", weight: "20%", desc: "Does the work connect disparate sub-fields or apply methods from one domain to another?" },
+  { dimension: "Evidence Gap Alignment", weight: "15%", desc: "How directly does the proposal target gaps identified by corpus analysis?" },
+  { dimension: "Potential Impact", weight: "10%", desc: "Expected significance based on citation patterns of related work and field growth rate." },
+];
+
+function NoveltyFramework({ score, explanation }: { score: number; explanation?: string | null }) {
+  const [expanded, setExpanded] = useState(false);
+  const pct = Math.round(score * 100);
+
+  return (
+    <div className="border border-border rounded bg-secondary/20 p-4">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <div className="flex items-center gap-2">
+          <Info className="w-3.5 h-3.5 text-muted-foreground" />
+          <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+            Novelty Scoring Framework
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-24 h-1.5 bg-border rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-foreground/60 transition-all"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="font-mono text-sm font-bold text-foreground">{formatScore(score)}</span>
+          </div>
+          {expanded ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="mt-4 space-y-4">
+          {explanation && (
+            <p className="text-xs text-foreground/80 leading-relaxed border-l-2 border-border pl-3 italic">
+              {explanation}
+            </p>
+          )}
+          <div className="space-y-2">
+            {NOVELTY_FRAMEWORK.map((dim) => (
+              <div key={dim.dimension} className="flex items-start gap-3 text-xs">
+                <span className="font-mono text-muted-foreground w-10 shrink-0 text-right">{dim.weight}</span>
+                <div>
+                  <span className="font-semibold text-foreground">{dim.dimension}</span>
+                  <span className="text-muted-foreground ml-1">— {dim.desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SupportingPapers({ paperIds, runId }: { paperIds: string[]; runId: string }) {
+  const { data } = useListPapers({ runId, limit: 500 });
+  if (!paperIds || paperIds.length === 0) return null;
+
+  const papers = data?.papers?.filter((p) => paperIds.includes(p.id)) ?? [];
+  if (papers.length === 0) return null;
+
+  return (
+    <div className="mt-4 pt-4 border-t border-border/50">
+      <h5 className="font-mono text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-3">
+        <FileText className="w-3 h-3" /> Evidence Chain ({papers.length} supporting papers)
+      </h5>
+      <div className="space-y-2">
+        {papers.map((paper) => (
+          <div
+            key={paper.id}
+            className="flex items-start gap-3 p-2.5 rounded border border-border/30 bg-secondary/10 hover:border-foreground/20 transition-colors group"
+          >
+            <Quote className="w-3 h-3 text-muted-foreground mt-1 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold text-foreground leading-snug line-clamp-1">
+                {paper.title}
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] font-mono text-muted-foreground">{paper.year ?? "N/A"}</span>
+                <span className="text-[10px] font-mono text-muted-foreground">{paper.citationCount ?? 0} citations</span>
+                {paper.url && (
+                  <a
+                    href={paper.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] font-mono text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function ProposalsView({ runId }: { runId: string }) {
   const { data, isLoading } = useGetProposals(runId);
@@ -22,8 +130,8 @@ export function ProposalsView({ runId }: { runId: string }) {
         <Lightbulb className="w-12 h-12 text-muted-foreground mb-2" />
         <h3 className="text-xl font-medium">No Proposals Generated</h3>
         <p className="text-muted-foreground text-sm max-w-md">Synthesize identified gaps into structured research proposals suitable for funding bodies.</p>
-        <Button 
-          variant="primary" 
+        <Button
+          variant="primary"
           onClick={() => generateMutation.mutate({ runId }, {
             onSuccess: () => queryClient.invalidateQueries({ queryKey: [`/api/proposals/${runId}`] })
           })}
@@ -42,7 +150,19 @@ export function ProposalsView({ runId }: { runId: string }) {
         <h3 className="text-xl font-mono text-foreground flex items-center gap-2">
           <Lightbulb className="w-5 h-5 text-muted-foreground" />
           Generated Research Proposals
+          <Badge variant="outline" className="font-mono text-xs ml-2">{proposals.length} proposals</Badge>
         </h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => generateMutation.mutate({ runId }, {
+            onSuccess: () => queryClient.invalidateQueries({ queryKey: [`/api/proposals/${runId}`] })
+          })}
+          disabled={generateMutation.isPending}
+          className="font-mono text-xs"
+        >
+          {generateMutation.isPending ? "..." : "Regenerate"}
+        </Button>
       </div>
 
       <div className="space-y-6">
@@ -53,12 +173,11 @@ export function ProposalsView({ runId }: { runId: string }) {
                 <div className="font-mono text-xs text-muted-foreground mb-2">PROP_{idx.toString().padStart(3, '0')}</div>
                 <h4 className="text-xl font-bold text-foreground leading-tight max-w-3xl">{prop.title}</h4>
               </div>
-              <div className="flex flex-col items-end shrink-0">
-                <span className="text-[10px] uppercase font-mono text-muted-foreground mb-1">Novelty Index</span>
-                <Badge variant="outline" className="font-mono text-lg border-border text-foreground px-3">
-                  {formatScore(prop.noveltyScore)}
-                </Badge>
-              </div>
+            </div>
+
+            {/* Novelty Framework */}
+            <div className="mb-6">
+              <NoveltyFramework score={prop.noveltyScore} explanation={prop.noveltyExplanation} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
@@ -69,7 +188,7 @@ export function ProposalsView({ runId }: { runId: string }) {
                   </h5>
                   <p className="text-foreground/90 leading-relaxed">{prop.motivation}</p>
                 </div>
-                
+
                 <div>
                   <h5 className="font-mono text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-2 border-b border-border/50 pb-1">
                     <PenTool className="w-3 h-3" /> Methodology
@@ -115,6 +234,9 @@ export function ProposalsView({ runId }: { runId: string }) {
                 </div>
               </div>
             </div>
+
+            {/* Supporting Papers / Evidence Chain */}
+            <SupportingPapers paperIds={prop.supportingPaperIds} runId={runId} />
           </Card>
         ))}
       </div>

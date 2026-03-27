@@ -141,23 +141,7 @@ router.get("/seed/:paperId", async (req, res) => {
       depth: depthMap.get(n.id) ?? 1,
     }));
 
-    // Identify key lineages (top cited paths)
-    const lineages = [];
-    const topHubs = nodesWithDepth
-      .filter((n) => n.isHub)
-      .sort((a, b) => b.citationCount - a.citationCount)
-      .slice(0, 5);
-
-    for (const hub of topHubs) {
-      lineages.push({
-        id: randomUUID(),
-        name: `Lineage: ${hub.title.substring(0, 50)}...`,
-        paperIds: [hub.id],
-        description: `High-impact paper with ${hub.citationCount} citations`,
-      });
-    }
-
-    // Deduplicate edges
+    // Deduplicate edges (moved before lineage detection)
     const edgeSet = new Set<string>();
     const uniqueEdges = edges.filter((e) => {
       const key = `${e.source}:${e.target}`;
@@ -165,6 +149,122 @@ router.get("/seed/:paperId", async (req, res) => {
       edgeSet.add(key);
       return true;
     });
+
+    // Top hub nodes for trajectory seeding
+    const topHubs = nodesWithDepth
+      .filter((n) => n.isHub)
+      .sort((a, b) => b.citationCount - a.citationCount)
+      .slice(0, 5);
+
+    // Identify key lineages (trace actual citation paths from seed)
+    const lineages: Array<{ id: string; name: string; paperIds: string[]; description: string }> = [];
+
+    // Build adjacency lists for path tracing
+    const outgoing = new Map<string, string[]>(); // citing -> cited
+    const incoming = new Map<string, string[]>(); // cited -> citing
+    for (const e of uniqueEdges) {
+      if (!outgoing.has(e.source)) outgoing.set(e.source, []);
+      outgoing.get(e.source)!.push(e.target);
+      if (!incoming.has(e.target)) incoming.set(e.target, []);
+      incoming.get(e.target)!.push(e.source);
+    }
+
+    // Find longest citation chains (paths through the graph)
+    // Use DFS from high-citation seed nodes to trace research trajectories
+    const allPaths: Array<{ path: string[]; score: number }> = [];
+
+    function tracePath(startId: string, adjacency: Map<string, string[]>, maxLen: number): string[][] {
+      const paths: string[][] = [];
+      const stack: Array<{ id: string; path: string[] }> = [{ id: startId, path: [startId] }];
+
+      while (stack.length > 0) {
+        const { id, path } = stack.pop()!;
+        if (path.length >= maxLen) {
+          paths.push([...path]);
+          continue;
+        }
+        const neighbors = adjacency.get(id) ?? [];
+        let extended = false;
+        for (const neighbor of neighbors) {
+          if (!path.includes(neighbor) && nodeMap.has(neighbor)) {
+            stack.push({ id: neighbor, path: [...path, neighbor] });
+            extended = true;
+          }
+        }
+        if (!extended && path.length >= 2) {
+          paths.push([...path]);
+        }
+      }
+      return paths;
+    }
+
+    // Start from seed and top hubs, trace forward citation chains
+    const seedNodes = [paperId!, ...topHubs.map((h) => h.id)].slice(0, 6);
+    for (const startId of seedNodes) {
+      const paths = tracePath(startId, outgoing, 5);
+      for (const path of paths) {
+        if (path.length >= 2) {
+          const score = path.reduce((sum, id) => {
+            const node = nodeMap.get(id);
+            return sum + (node?.citationCount ?? 0);
+          }, 0) * path.length;
+          allPaths.push({ path, score });
+        }
+      }
+    }
+
+    // Also trace backward (from highly cited to citing papers)
+    for (const startId of seedNodes.slice(0, 3)) {
+      const paths = tracePath(startId, incoming, 5);
+      for (const path of paths) {
+        if (path.length >= 2) {
+          const score = path.reduce((sum, id) => {
+            const node = nodeMap.get(id);
+            return sum + (node?.citationCount ?? 0);
+          }, 0) * path.length;
+          allPaths.push({ path, score });
+        }
+      }
+    }
+
+    // Select top 5 diverse trajectories
+    allPaths.sort((a, b) => b.score - a.score);
+    const usedPapers = new Set<string>();
+    for (const { path } of allPaths) {
+      if (lineages.length >= 5) break;
+      // Check path diversity (at least 1 new paper)
+      const newPapers = path.filter((id) => !usedPapers.has(id));
+      if (newPapers.length === 0) continue;
+
+      const firstPaper = nodeMap.get(path[0]!);
+      const lastPaper = nodeMap.get(path[path.length - 1]!);
+      const firstTitle = firstPaper?.title?.substring(0, 40) ?? "Unknown";
+      const lastTitle = lastPaper?.title?.substring(0, 40) ?? "Unknown";
+      const totalCit = path.reduce((s, id) => s + (nodeMap.get(id)?.citationCount ?? 0), 0);
+
+      lineages.push({
+        id: randomUUID(),
+        name: path.length > 2
+          ? `${firstTitle}... → ${lastTitle}...`
+          : `${firstTitle}... → ${lastTitle}...`,
+        paperIds: path,
+        description: `${path.length}-paper trajectory spanning ${(firstPaper?.year ?? "?")}-${(lastPaper?.year ?? "?")} with ${totalCit} combined citations`,
+      });
+
+      for (const id of path) usedPapers.add(id);
+    }
+
+    // Fallback: if no real paths found, use hub-based lineages
+    if (lineages.length === 0) {
+      for (const hub of topHubs) {
+        lineages.push({
+          id: randomUUID(),
+          name: `Lineage: ${hub.title.substring(0, 50)}...`,
+          paperIds: [hub.id],
+          description: `High-impact paper with ${hub.citationCount} citations`,
+        });
+      }
+    }
 
     res.json({
       nodes: nodesWithDepth,
