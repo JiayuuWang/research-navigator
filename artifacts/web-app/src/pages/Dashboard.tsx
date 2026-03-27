@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "wouter";
 import { useGetCollectionRun } from "@workspace/api-client-react";
 import { Tabs, Progress } from "@/components/ui";
@@ -24,6 +24,11 @@ export default function Dashboard() {
   const params = useParams();
   const id = params.id as string;
   const [activeTab, setActiveTab] = useState(TABS[0].id);
+
+  const navigateToTab = useCallback((tabId: string) => {
+    setActiveTab(tabId);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   const { data: run, isLoading, error, refetch } = useGetCollectionRun(id);
 
@@ -125,10 +130,10 @@ export default function Dashboard() {
               {activeTab === "papers" && <PapersList topic={run.topic} runId={run.id} />}
               {activeTab === "graph" && <CitationGraphView topic={run.topic} />}
               {activeTab === "trends" && <TrendAnalysisView runId={run.id} />}
-              {activeTab === "gaps" && <ResearchGapsView runId={run.id} />}
-              {activeTab === "proposals" && <ProposalsView runId={run.id} />}
+              {activeTab === "gaps" && <ResearchGapsView runId={run.id} onNavigate={navigateToTab} />}
+              {activeTab === "proposals" && <ProposalsView runId={run.id} onNavigate={navigateToTab} />}
               {activeTab === "debate" && <DebateView runId={run.id} />}
-              {activeTab === "report" && <ReportView runId={run.id} />}
+              {activeTab === "report" && <ReportView runId={run.id} onNavigate={navigateToTab} />}
             </div>
           </div>
         )}

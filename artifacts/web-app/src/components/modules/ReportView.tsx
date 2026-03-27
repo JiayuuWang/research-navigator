@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { useGetReport, useGenerateReport } from "@workspace/api-client-react";
+import { useGetReport, useGenerateReport, useGetTrends, useGetResearchGaps, useGetProposals } from "@workspace/api-client-react";
 import { Card, Button } from "@/components/ui";
 import { FileText, Download, Play, CheckCircle, RefreshCw, BookOpen, TrendingUp, Target, MessageSquare, Code2, Printer } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -11,8 +11,11 @@ function SectionIcon({ section }: { section: number }) {
   return <Icon className="w-4 h-4 text-muted-foreground shrink-0" />;
 }
 
-export function ReportView({ runId }: { runId: string }) {
+export function ReportView({ runId, onNavigate }: { runId: string; onNavigate?: (tab: string) => void }) {
   const { data, isLoading } = useGetReport(runId);
+  const { data: trendsData } = useGetTrends(runId);
+  const { data: gapsData } = useGetResearchGaps(runId);
+  const { data: proposalsData } = useGetProposals(runId);
   const generateMutation = useGenerateReport();
   const queryClient = useQueryClient();
 
@@ -105,8 +108,13 @@ export function ReportView({ runId }: { runId: string }) {
     ol { padding-left: 1.5rem; }
     ol li { margin-bottom: 0.75rem; font-size: 0.95rem; color: #cbd5e1; }
     .rec-num { font-family: 'Courier New', monospace; font-size: 0.7rem; background: rgba(255,255,255,0.08); color: #e0e0e0; padding: 2px 6px; border-radius: 3px; margin-right: 0.5rem; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-family: 'Courier New', monospace; font-size: 0.8rem; }
+    th { text-align: left; padding: 8px 12px; border-bottom: 1px solid #334155; color: #94a3b8; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.1em; }
+    td { padding: 6px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #cbd5e1; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .score-bar { display: inline-block; height: 6px; background: #475569; border-radius: 3px; }
     footer { border-top: 1px solid #1e293b; padding-top: 1rem; margin-top: 3rem; display: flex; justify-content: space-between; font-family: 'Courier New', monospace; font-size: 0.65rem; color: #475569; }
-    @media print { body { background: #fff; color: #111; } h1, h2 { color: #111; } .meta, footer { color: #555; } p, ol li { color: #333; } }
+    @media print { body { background: #fff; color: #111; } h1, h2 { color: #111; } .meta, footer { color: #555; } p, ol li, td { color: #333; } th { color: #555; } td { border-bottom-color: #ddd; } th { border-bottom-color: #aaa; } .score-bar { background: #999; } }
   </style>
 </head>
 <body>
@@ -125,6 +133,51 @@ export function ReportView({ runId }: { runId: string }) {
       <h2>${escapeHtml(title)}</h2>
       <p>${escapeHtml(content)}</p>
     </section>`).join("")}
+    ${trendsData && trendsData.keywordTrends.length > 0 ? `
+    <section>
+      <h2>Appendix A: Keyword Growth Rankings</h2>
+      <table>
+        <thead><tr><th>#</th><th>Keyword</th><th>Growth Rate</th><th>Peak Year</th></tr></thead>
+        <tbody>
+          ${trendsData.keywordTrends.slice(0, 15).map((kt, i) => `<tr>
+            <td>${i + 1}</td>
+            <td>${escapeHtml(kt.keyword)}</td>
+            <td>${kt.growthRate > 0 ? "+" : ""}${(kt.growthRate * 100).toFixed(0)}%</td>
+            <td>${kt.peakYear}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </section>` : ""}
+    ${gapsData && gapsData.gaps.length > 0 ? `
+    <section>
+      <h2>Appendix B: Research Gaps</h2>
+      <table>
+        <thead><tr><th>#</th><th>Gap</th><th>Novelty</th><th>Impact</th><th>Feasibility</th></tr></thead>
+        <tbody>
+          ${gapsData.gaps.map((g, i) => `<tr>
+            <td>GAP_${String(i).padStart(3, "0")}</td>
+            <td>${escapeHtml(g.title)}</td>
+            <td><span class="score-bar" style="width:${Math.round((g.noveltyScore ?? 0) * 60)}px"></span> ${((g.noveltyScore ?? 0) * 100).toFixed(0)}%</td>
+            <td><span class="score-bar" style="width:${Math.round((g.impactScore ?? 0) * 60)}px"></span> ${((g.impactScore ?? 0) * 100).toFixed(0)}%</td>
+            <td><span class="score-bar" style="width:${Math.round((g.feasibilityScore ?? 0) * 60)}px"></span> ${((g.feasibilityScore ?? 0) * 100).toFixed(0)}%</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </section>` : ""}
+    ${proposalsData && proposalsData.proposals.length > 0 ? `
+    <section>
+      <h2>Appendix C: Research Proposals</h2>
+      <table>
+        <thead><tr><th>#</th><th>Title</th><th>Novelty Score</th></tr></thead>
+        <tbody>
+          ${proposalsData.proposals.map((p, i) => `<tr>
+            <td>PROP_${String(i).padStart(3, "0")}</td>
+            <td>${escapeHtml(p.title)}</td>
+            <td><span class="score-bar" style="width:${Math.round((p.noveltyScore ?? 0) * 60)}px"></span> ${((p.noveltyScore ?? 0) * 100).toFixed(0)}%</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </section>` : ""}
     ${data.recommendations.length > 0 ? `
     <section>
       <h2>Strategic Recommendations</h2>
@@ -147,7 +200,7 @@ export function ReportView({ runId }: { runId: string }) {
     a.download = `research-navigator-${data.runId.substring(0, 8)}-${data.topic.replace(/\s+/g, "-").toLowerCase().substring(0, 30)}.html`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [data]);
+  }, [data, trendsData, gapsData, proposalsData]);
 
   const handleExportPdf = useCallback(() => {
     if (!data) return;
@@ -269,6 +322,13 @@ export function ReportView({ runId }: { runId: string }) {
     );
   }
 
+  const SECTION_TAB_MAP: Record<number, { tab: string; label: string }> = {
+    2: { tab: "graph", label: "View Citation Network" },
+    3: { tab: "trends", label: "View Trend Analysis" },
+    4: { tab: "gaps", label: "View Research Gaps" },
+    5: { tab: "debate", label: "View Debate Transcript" },
+  };
+
   const sections = [
     { num: 1, title: "I. Executive Overview", content: data.overview },
     { num: 2, title: "II. Network Topology", content: data.graphInsights },
@@ -340,15 +400,26 @@ export function ReportView({ runId }: { runId: string }) {
       <Card className="bg-card border-border">
         <div className="p-8 sm:p-10 space-y-10 font-serif leading-relaxed">
 
-          {sections.map(({ num, title, content }) => (
+          {sections.map(({ num, title, content }) => {
+            const crossRef = SECTION_TAB_MAP[num];
+            return (
             <section key={num}>
               <h3 className="text-base font-mono font-bold uppercase tracking-widest text-muted-foreground mb-4 border-b border-border pb-2 flex items-center gap-2">
                 <SectionIcon section={num} />
                 {title}
               </h3>
               <p className="text-foreground/90 text-sm leading-8">{content}</p>
+              {crossRef && onNavigate && (
+                <button
+                  onClick={() => onNavigate(crossRef.tab)}
+                  className="mt-3 text-[10px] font-mono text-muted-foreground hover:text-foreground transition-colors border-b border-dashed border-muted-foreground/30 hover:border-foreground/50"
+                >
+                  {crossRef.label} →
+                </button>
+              )}
             </section>
-          ))}
+            );
+          })}
 
           {/* Recommendations */}
           {data.recommendations.length > 0 && (

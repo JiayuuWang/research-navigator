@@ -76,7 +76,7 @@ function ScoringMethodology() {
   );
 }
 
-export function ResearchGapsView({ runId }: { runId: string }) {
+export function ResearchGapsView({ runId, onNavigate }: { runId: string; onNavigate?: (tab: string) => void }) {
   const { data, isLoading } = useGetResearchGaps(runId);
   const analyzeMutation = useAnalyzeResearchGaps();
   const queryClient = useQueryClient();
@@ -266,6 +266,18 @@ export function ResearchGapsView({ runId }: { runId: string }) {
       {filtered.length === 0 && searchQuery && (
         <div className="text-center py-8 text-muted-foreground font-mono text-sm">
           No gaps matching "{searchQuery}"
+        </div>
+      )}
+
+      {/* Cross-module navigation */}
+      {gaps.length > 0 && onNavigate && (
+        <div className="flex justify-center pt-4 border-t border-border">
+          <button
+            onClick={() => onNavigate("proposals")}
+            className="text-xs font-mono text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 px-4 py-2 border border-border rounded hover:border-foreground/30"
+          >
+            View Generated Proposals →
+          </button>
         </div>
       )}
     </div>

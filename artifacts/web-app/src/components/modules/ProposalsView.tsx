@@ -113,7 +113,7 @@ function SupportingPapers({ paperIds, runId }: { paperIds: string[]; runId: stri
   );
 }
 
-export function ProposalsView({ runId }: { runId: string }) {
+export function ProposalsView({ runId, onNavigate }: { runId: string; onNavigate?: (tab: string) => void }) {
   const { data, isLoading } = useGetProposals(runId);
   const generateMutation = useGenerateProposals();
   const queryClient = useQueryClient();

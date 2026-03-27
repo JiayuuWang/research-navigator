@@ -167,42 +167,82 @@ export function CitationGraphView({ topic }: { topic: string }) {
     };
   }, [graphData, searchQuery, yearRange, minCitations, clusterColorMap]);
 
+  // Track trajectory papers for highlighting
+  const trajectoryPaperIds = useMemo(() => {
+    if (!graphData?.lineages) return new Set<string>();
+    const ids = new Set<string>();
+    for (const lineage of graphData.lineages) {
+      for (const id of lineage.paperIds ?? []) ids.add(id);
+    }
+    return ids;
+  }, [graphData]);
+
+  const currentYear = new Date().getFullYear();
+
   const nodeCanvasObject = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const size = node.val ?? 3;
     const x = node.x ?? 0;
     const y = node.y ?? 0;
 
+    // Year-based opacity: newer papers are more opaque
+    const yearAge = currentYear - (node.year ?? currentYear);
+    const ageOpacity = Math.max(0.4, 1 - yearAge * 0.08);
+
+    const isTrajectory = trajectoryPaperIds.has(node.id);
+
     // Glow for hub nodes
     if (node.isHub) {
       ctx.beginPath();
-      ctx.arc(x, y, size + 3, 0, 2 * Math.PI);
-      const grd = ctx.createRadialGradient(x, y, 0, x, y, size + 3);
-      grd.addColorStop(0, "rgba(255,255,255,0.2)");
+      ctx.arc(x, y, size + 5, 0, 2 * Math.PI);
+      const grd = ctx.createRadialGradient(x, y, size * 0.5, x, y, size + 5);
+      grd.addColorStop(0, `rgba(255,255,255,${0.25 * ageOpacity})`);
       grd.addColorStop(1, "rgba(255,255,255,0)");
       ctx.fillStyle = grd;
       ctx.fill();
     }
 
+    // Trajectory highlight ring
+    if (isTrajectory && !node.isHub) {
+      ctx.beginPath();
+      ctx.arc(x, y, size + 2, 0, 2 * Math.PI);
+      ctx.strokeStyle = `rgba(255,255,255,${0.3 * ageOpacity})`;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 2]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Main node
     ctx.beginPath();
     ctx.arc(x, y, size, 0, 2 * Math.PI);
-    ctx.fillStyle = node.isHub
-      ? "hsl(0,0%,90%)"
-      : node.isBridge
-      ? "hsl(0,0%,70%)"
-      : node.highlighted
-      ? "hsl(0,0%,80%)"
-      : (node.color ?? "hsl(0,0%,45%)");
+    if (node.isHub) {
+      ctx.fillStyle = `hsla(0,0%,92%,${ageOpacity})`;
+    } else if (node.isBridge) {
+      ctx.fillStyle = `hsla(0,0%,72%,${ageOpacity})`;
+    } else if (node.highlighted) {
+      ctx.fillStyle = `hsla(0,0%,85%,${ageOpacity})`;
+    } else if (isTrajectory) {
+      ctx.fillStyle = `hsla(0,0%,78%,${ageOpacity})`;
+    } else {
+      ctx.fillStyle = `hsla(0,0%,45%,${ageOpacity})`;
+    }
     ctx.fill();
 
-    // Label for larger nodes
-    if (size > 5 || globalScale > 1.5) {
-      const label = node.name?.substring(0, 30) ?? "";
-      ctx.font = `${Math.max(8, 10 / globalScale)}px monospace`;
-      ctx.fillStyle = "rgba(255,255,255,0.85)";
+    // Subtle border for better definition
+    ctx.strokeStyle = `rgba(255,255,255,${0.08 * ageOpacity})`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Label for larger nodes or when zoomed in
+    if (size > 4.5 || globalScale > 1.8) {
+      const label = node.name?.substring(0, 35) ?? "";
+      const fontSize = Math.max(7, Math.min(11, 10 / globalScale));
+      ctx.font = `${fontSize}px monospace`;
+      ctx.fillStyle = `rgba(255,255,255,${0.75 * ageOpacity})`;
       ctx.textAlign = "center";
-      ctx.fillText(label, x, y + size + 6);
+      ctx.fillText(label, x, y + size + Math.max(5, 7 / globalScale));
     }
-  }, []);
+  }, [trajectoryPaperIds, currentYear]);
 
   if (isLoading || !seedId) {
     return (
@@ -320,8 +360,12 @@ export function CitationGraphView({ topic }: { topic: string }) {
           nodeLabel={(node) => `${(node as any).name} (${(node as any).year ?? "?"}) — ${(node as any).citationCount ?? 0} citations`}
           nodeCanvasObject={nodeCanvasObject}
           nodeCanvasObjectMode={() => "replace"}
-          linkColor={(link) => (link as any).influential ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.05)"}
-          linkWidth={(link) => (link as any).influential ? 1.5 : 0.5}
+          linkColor={(link) => (link as any).influential ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.04)"}
+          linkWidth={(link) => (link as any).influential ? 1.2 : 0.4}
+          linkCurvature={0.15}
+          linkDirectionalParticles={(link) => (link as any).influential ? 1 : 0}
+          linkDirectionalParticleWidth={1.5}
+          linkDirectionalParticleColor={() => "rgba(255,255,255,0.15)"}
           onNodeClick={(node) => setSelectedNode((node as any).id)}
           backgroundColor="#0a0a0a"
           enableNodeDrag={true}
@@ -329,25 +373,26 @@ export function CitationGraphView({ topic }: { topic: string }) {
           cooldownTicks={150}
         />
 
-        <div className="absolute bottom-4 left-4 bg-card border border-border p-3 rounded text-xs font-mono flex flex-col gap-2">
+        <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm border border-border p-3 rounded text-xs font-mono flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[hsl(0,0%,90%)]" />
+            <div className="w-3 h-3 rounded-full bg-[hsl(0,0%,92%)] shadow-[0_0_4px_rgba(255,255,255,0.2)]" />
             Hub Paper
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[hsl(0,0%,70%)]" />
+            <div className="w-3 h-3 rounded-full bg-[hsl(0,0%,72%)]" />
             Bridge Paper
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[hsl(0,0%,45%)]" />
-            Standard Node
+            <div className="w-3 h-3 rounded-full bg-[hsl(0,0%,78%)] border border-dashed border-white/30" />
+            Trajectory
           </div>
-          {searchQuery && (
-            <div className="flex items-center gap-2 border-t border-border pt-2 mt-1">
-              <div className="w-3 h-3 rounded-full bg-[hsl(0,0%,80%)]" />
-              Search Match
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-[hsl(0,0%,45%)]" />
+            Standard
+          </div>
+          <div className="text-[9px] text-muted-foreground/50 border-t border-border/30 pt-1 mt-1">
+            Opacity = recency
+          </div>
         </div>
 
         <AnimatePresence>
