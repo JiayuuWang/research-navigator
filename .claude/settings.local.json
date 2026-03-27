@@ -19,7 +19,18 @@
       "Bash(npx drizzle-kit:*)",
       "Bash(export DATABASE_URL OPENAI_API_KEY OPENAI_BASE_URL)",
       "Bash(curl -s http://localhost:8080/api/collection/runs)",
-      "Bash(curl -s http://localhost:5173)"
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(git stash:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(echo \"DATABASE_URL=$DATABASE_URL\")",
+      "Bash(set -a)",
+      "Bash(set +a)",
+      "Bash(node:*)",
+      "Bash(netstat -ano)",
+      "Bash(tasklist //FI \"PID eq 69536\")",
+      "Bash(curl:*)"
     ]
   }
 }
