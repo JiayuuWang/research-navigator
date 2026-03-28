@@ -92,6 +92,7 @@ function mapOAWork(w: OAWork): CollectedPaper {
     authors: (w.authorships ?? []).map((a) => ({
       id: `oa_author_${a.author?.id?.replace("https://openalex.org/", "") ?? "unknown"}`,
       name: a.author?.display_name ?? "Unknown",
+      affiliations: (a.institutions ?? []).map((inst) => inst.display_name).filter(Boolean) as string[],
     })),
   };
 }

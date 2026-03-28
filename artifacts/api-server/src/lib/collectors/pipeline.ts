@@ -114,7 +114,7 @@ async function persistPaper(paper: CollectedPaper, runId?: string): Promise<bool
       await db.insert(authorsTable).values({
         id: author.id,
         name: author.name,
-        affiliations: [],
+        affiliations: author.affiliations ?? [],
       }).onConflictDoNothing();
 
       await db.insert(paperAuthorsTable).values({

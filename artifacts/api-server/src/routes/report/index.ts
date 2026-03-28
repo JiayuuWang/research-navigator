@@ -5,13 +5,21 @@ import {
   papersTable,
   researchProposalsTable,
   debateSessionsTable,
-  clustersTable,
   keywordTrendsTable,
 } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
+
+interface ReportContent {
+  overview: string;
+  graphInsights: string;
+  trendsSummary: string;
+  gapsSummary: string;
+  controversySummary: string;
+  recommendations: string[];
+}
 
 // GET /report/:runId
 router.get("/:runId", async (req, res) => {
@@ -23,9 +31,28 @@ router.get("/:runId", async (req, res) => {
       return;
     }
 
-    const papers = await db.select().from(papersTable)
-      .where(eq(papersTable.collectionRunId, runId!))
-      .limit(50);
+    // Check if a generated report is persisted in metadata
+    const meta = (run.metadata as Record<string, unknown>) ?? {};
+    const savedReport = meta.generatedReport as ReportContent | undefined;
+
+    if (savedReport?.overview) {
+      // Return persisted AI-generated report
+      res.json({
+        runId,
+        topic: run.topic,
+        overview: savedReport.overview,
+        graphInsights: savedReport.graphInsights,
+        trendsSummary: savedReport.trendsSummary,
+        gapsSummary: savedReport.gapsSummary,
+        controversySummary: savedReport.controversySummary,
+        recommendations: savedReport.recommendations ?? [],
+        totalPapers: run.papersCollected ?? 0,
+        generatedAt: (meta.reportGeneratedAt as string) ?? new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Fallback: return template content
     const proposals = await db.select().from(researchProposalsTable).where(eq(researchProposalsTable.collectionRunId, runId!)).limit(5);
     const debates = await db.select().from(debateSessionsTable).where(eq(debateSessionsTable.collectionRunId, runId!)).limit(1);
     const trends = await db.select().from(keywordTrendsTable).where(eq(keywordTrendsTable.collectionRunId, runId!)).limit(20);
@@ -76,6 +103,7 @@ router.post("/:runId/generate", async (req, res) => {
     const proposalTitles = proposals.map((p) => p.title).join(", ");
     const topKeywords = trends.sort((a, b) => (b.growthRate ?? 0) - (a.growthRate ?? 0)).slice(0, 8).map((t) => t.keyword).join(", ");
     const debateQuestion = debates[0]?.controversialQuestion ?? "Key open questions in the field";
+    const narrativeSummary = ((run.metadata as Record<string, unknown>)?.narrativeSummary as string) ?? "";
 
     const reportResponse = await openai.chat.completions.create({
       model: "gpt-5.2",
@@ -89,6 +117,7 @@ Data:
 - Top emerging keywords: ${topKeywords || "Not yet computed"}
 - Research proposals generated: ${proposalTitles || "None yet"}
 - Controversy analyzed: ${debateQuestion}
+- AI trend narrative: ${narrativeSummary.substring(0, 500) || "Not available"}
 
 Write a scholarly report with these sections. Each section should be 2-3 paragraphs of flowing prose:
 
@@ -105,25 +134,41 @@ Respond in JSON:
       response_format: { type: "json_object" },
     });
 
-    let reportData: {
-      overview?: string;
-      graphInsights?: string;
-      trendsSummary?: string;
-      gapsSummary?: string;
-      controversySummary?: string;
-      recommendations?: string[];
-    } = {};
+    let reportData: ReportContent = {
+      overview: "",
+      graphInsights: "",
+      trendsSummary: "",
+      gapsSummary: "",
+      controversySummary: "",
+      recommendations: [],
+    };
     try { reportData = JSON.parse(reportResponse.choices[0]?.message?.content ?? "{}"); } catch { /* empty */ }
+
+    const finalReport: ReportContent = {
+      overview: reportData.overview || `Analysis of ${run.papersCollected ?? 0} papers in "${run.topic}".`,
+      graphInsights: reportData.graphInsights || "Citation network reveals complex interconnections.",
+      trendsSummary: reportData.trendsSummary || "Field shows active growth across multiple fronts.",
+      gapsSummary: reportData.gapsSummary || "Several research opportunities identified.",
+      controversySummary: reportData.controversySummary || debates[0]?.finalReport || "No controversy analysis performed.",
+      recommendations: reportData.recommendations?.length ? reportData.recommendations : proposals.map((p) => p.title),
+    };
+
+    // Persist the generated report in collection run metadata
+    const existingMeta = (run.metadata as Record<string, unknown>) ?? {};
+    await db.update(collectionRunsTable)
+      .set({
+        metadata: {
+          ...existingMeta,
+          generatedReport: finalReport,
+          reportGeneratedAt: new Date().toISOString(),
+        },
+      })
+      .where(eq(collectionRunsTable.id, runId!));
 
     res.json({
       runId,
       topic: run.topic,
-      overview: reportData.overview ?? `Analysis of ${run.papersCollected ?? 0} papers in "${run.topic}".`,
-      graphInsights: reportData.graphInsights ?? "Citation network reveals complex interconnections.",
-      trendsSummary: reportData.trendsSummary ?? "Field shows active growth across multiple fronts.",
-      gapsSummary: reportData.gapsSummary ?? "Several research opportunities identified.",
-      controversySummary: reportData.controversySummary ?? debates[0]?.finalReport ?? "No controversy analysis performed.",
-      recommendations: reportData.recommendations ?? proposals.map((p) => p.title),
+      ...finalReport,
       totalPapers: run.papersCollected ?? 0,
       generatedAt: new Date().toISOString(),
     });

@@ -66,7 +66,7 @@ export interface CollectedPaper {
   url: string | null;
   pdfUrl: string | null;
   source: string;
-  authors: Array<{ id: string; name: string }>;
+  authors: Array<{ id: string; name: string; affiliations: string[] }>;
 }
 
 function mapSSPaper(p: SSPaper): CollectedPaper {
@@ -91,7 +91,7 @@ function mapSSPaper(p: SSPaper): CollectedPaper {
     url: p.url ?? null,
     pdfUrl: p.openAccessPdf?.url ?? null,
     source: "semantic_scholar",
-    authors: (p.authors ?? []).map((a) => ({ id: `ss_author_${a.authorId}`, name: a.name })),
+    authors: (p.authors ?? []).map((a) => ({ id: `ss_author_${a.authorId}`, name: a.name, affiliations: [] })),
   };
 }
 
@@ -170,6 +170,67 @@ export async function collectFromSemanticScholar(
   }
 
   return papers;
+}
+
+export interface CitationWithMeta {
+  citingPaperId: string;
+  citedPaperId: string;
+  isInfluential: boolean;
+  neighborPaper: { id: string; title: string; year: number | null; citationCount: number; fieldsOfStudy: string[] } | null;
+}
+
+export async function fetchSSCitationsWithMeta(
+  paperId: string
+): Promise<CitationWithMeta[]> {
+  const url = `${BASE_URL}/paper/${paperId}/citations?fields=paperId,title,year,citationCount,fieldsOfStudy,isInfluential&limit=500`;
+  const res = await fetchWithRetry(url);
+  if (!res.ok) return [];
+
+  const data = (await res.json()) as {
+    data: Array<{ citingPaper?: { paperId: string; title?: string; year?: number; citationCount?: number; fieldsOfStudy?: string[] }; isInfluential?: boolean }>;
+  };
+
+  return (data.data ?? [])
+    .filter((c) => c.citingPaper?.paperId)
+    .map((c) => ({
+      citingPaperId: `ss_${c.citingPaper!.paperId}`,
+      citedPaperId: `ss_${paperId}`,
+      isInfluential: c.isInfluential ?? false,
+      neighborPaper: {
+        id: `ss_${c.citingPaper!.paperId}`,
+        title: c.citingPaper!.title ?? "Untitled",
+        year: c.citingPaper!.year ?? null,
+        citationCount: c.citingPaper!.citationCount ?? 0,
+        fieldsOfStudy: c.citingPaper!.fieldsOfStudy ?? [],
+      },
+    }));
+}
+
+export async function fetchSSReferencesWithMeta(
+  paperId: string
+): Promise<CitationWithMeta[]> {
+  const url = `${BASE_URL}/paper/${paperId}/references?fields=paperId,title,year,citationCount,fieldsOfStudy,isInfluential&limit=500`;
+  const res = await fetchWithRetry(url);
+  if (!res.ok) return [];
+
+  const data = (await res.json()) as {
+    data: Array<{ citedPaper?: { paperId: string; title?: string; year?: number; citationCount?: number; fieldsOfStudy?: string[] }; isInfluential?: boolean }>;
+  };
+
+  return (data.data ?? [])
+    .filter((r) => r.citedPaper?.paperId)
+    .map((r) => ({
+      citingPaperId: `ss_${paperId}`,
+      citedPaperId: `ss_${r.citedPaper!.paperId}`,
+      isInfluential: r.isInfluential ?? false,
+      neighborPaper: {
+        id: `ss_${r.citedPaper!.paperId}`,
+        title: r.citedPaper!.title ?? "Untitled",
+        year: r.citedPaper!.year ?? null,
+        citationCount: r.citedPaper!.citationCount ?? 0,
+        fieldsOfStudy: r.citedPaper!.fieldsOfStudy ?? [],
+      },
+    }));
 }
 
 export async function fetchSSCitations(
