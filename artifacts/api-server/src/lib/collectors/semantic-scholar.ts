@@ -123,37 +123,50 @@ export async function collectFromSemanticScholar(
   const papers: CollectedPaper[] = [];
   let offset = 0;
   const pageSize = 100;
-  const maxYear = yearTo ?? new Date().getFullYear();
-  const minYear = yearFrom ?? maxYear - 2;
+  const currentYear = new Date().getFullYear();
+  const maxYear = yearTo ?? currentYear;
+  const minYear = yearFrom ?? currentYear - 1; // Default to last 2 years only
 
-  while (papers.length < limit) {
-    const remaining = limit - papers.length;
-    const fetchSize = Math.min(pageSize, remaining);
-    const url = `${BASE_URL}/paper/search?query=${encodeURIComponent(topic)}&fields=${FIELDS}&offset=${offset}&limit=${fetchSize}&year=${minYear}-${maxYear}`;
+  // Strategy: Fetch newest papers first by querying year-by-year from most recent
+  const yearsToQuery: number[] = [];
+  for (let y = maxYear; y >= minYear; y--) {
+    yearsToQuery.push(y);
+  }
 
-    logger.info({ url, offset, collected: papers.length }, "Fetching from Semantic Scholar");
+  for (const year of yearsToQuery) {
+    if (papers.length >= limit) break;
+    offset = 0;
 
-    const res = await fetchWithRetry(url);
-    if (!res.ok) {
-      logger.error({ status: res.status }, "Semantic Scholar API error");
-      break;
-    }
+    while (papers.length < limit) {
+      const remaining = limit - papers.length;
+      const fetchSize = Math.min(pageSize, remaining);
+      // Sort by publicationDate descending to get the newest papers first within each year
+      const url = `${BASE_URL}/paper/search?query=${encodeURIComponent(topic)}&fields=${FIELDS}&offset=${offset}&limit=${fetchSize}&year=${year}-${year}&sort=publicationDate:desc`;
 
-    const data = (await res.json()) as { data: SSPaper[]; next?: number; total?: number };
-    const batch = data.data ?? [];
-    if (batch.length === 0) break;
+      logger.info({ url, offset, year, collected: papers.length }, "Fetching from Semantic Scholar");
 
-    for (const p of batch) {
-      if (p.title && p.paperId) {
-        papers.push(mapSSPaper(p));
+      const res = await fetchWithRetry(url);
+      if (!res.ok) {
+        logger.error({ status: res.status }, "Semantic Scholar API error");
+        break;
       }
+
+      const data = (await res.json()) as { data: SSPaper[]; next?: number; total?: number };
+      const batch = data.data ?? [];
+      if (batch.length === 0) break;
+
+      for (const p of batch) {
+        if (p.title && p.paperId) {
+          papers.push(mapSSPaper(p));
+        }
+      }
+
+      onProgress?.(papers.length);
+      offset += batch.length;
+
+      if (!data.next || offset >= (data.total ?? Infinity)) break;
+      await sleep(RATE_LIMIT_MS);
     }
-
-    onProgress?.(papers.length);
-    offset += batch.length;
-
-    if (!data.next || offset >= (data.total ?? Infinity)) break;
-    await sleep(RATE_LIMIT_MS);
   }
 
   return papers;

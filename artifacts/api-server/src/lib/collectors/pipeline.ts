@@ -4,9 +4,10 @@ import {
   authorsTable,
   paperAuthorsTable,
   collectionRunsTable,
+  citationsTable,
 } from "@workspace/db";
-import { eq, or } from "drizzle-orm";
-import { collectFromSemanticScholar } from "./semantic-scholar.js";
+import { eq, or, inArray } from "drizzle-orm";
+import { collectFromSemanticScholar, fetchSSCitations, fetchSSReferences } from "./semantic-scholar.js";
 import type { CollectedPaper } from "./semantic-scholar.js";
 import { collectFromOpenAlex } from "./open-alex.js";
 import { logger } from "../logger.js";
@@ -226,6 +227,11 @@ export async function runCollectionPipeline(
 
     logger.info({ runId, persisted, skipped, duplicates }, "Collection pipeline complete");
 
+    // Collect citation relationships asynchronously (best-effort, don't block completion)
+    collectCitationRelationships(runId, unique).catch((err) => {
+      logger.error({ err, runId }, "Citation collection failed (non-fatal)");
+    });
+
     return {
       runId,
       papersCollected: persisted,
@@ -244,4 +250,65 @@ export async function runCollectionPipeline(
 
     throw err;
   }
+}
+
+/**
+ * Collect citation relationships for papers that have Semantic Scholar IDs.
+ * This runs after the main pipeline completes so the user sees "completed" quickly.
+ * We fetch citations and references for the top papers by citation count.
+ */
+async function collectCitationRelationships(
+  runId: string,
+  papers: CollectedPaper[]
+): Promise<void> {
+  // Only process papers that came from Semantic Scholar (have SS IDs)
+  const ssPapers = papers
+    .filter((p) => p.semanticScholarId)
+    .sort((a, b) => (b.citationCount ?? 0) - (a.citationCount ?? 0));
+
+  // Collect all paper IDs in this run for cross-referencing
+  const allPaperIds = new Set(papers.map((p) => p.id));
+  const allSSIds = new Set(ssPapers.map((p) => p.semanticScholarId!));
+
+  // Fetch citations for top papers (limit to avoid excessive API calls)
+  const topPapers = ssPapers.slice(0, 30);
+  let citationCount = 0;
+
+  for (const paper of topPapers) {
+    try {
+      const ssId = paper.semanticScholarId!;
+
+      // Fetch both citations (papers that cite this one) and references (papers this one cites)
+      const [citations, references] = await Promise.all([
+        fetchSSCitations(ssId),
+        fetchSSReferences(ssId),
+      ]);
+
+      const allRelations = [...citations, ...references];
+
+      for (const rel of allRelations) {
+        // Only store citations between papers in our corpus
+        if (allPaperIds.has(rel.citingPaperId) && allPaperIds.has(rel.citedPaperId)) {
+          try {
+            await db.insert(citationsTable).values({
+              id: randomUUID(),
+              citingPaperId: rel.citingPaperId,
+              citedPaperId: rel.citedPaperId,
+              isInfluential: rel.isInfluential,
+            }).onConflictDoNothing();
+            citationCount++;
+          } catch {
+            // Ignore individual insertion errors
+          }
+        }
+      }
+
+      // Rate limit between papers
+      await new Promise((r) => setTimeout(r, 1200));
+    } catch (err) {
+      logger.warn({ err, paperId: paper.id }, "Failed to fetch citations for paper");
+    }
+  }
+
+  logger.info({ runId, citationCount, papersProcessed: topPapers.length }, "Citation collection complete");
 }

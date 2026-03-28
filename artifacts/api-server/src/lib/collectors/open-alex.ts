@@ -104,12 +104,14 @@ export async function collectFromOpenAlex(
   onProgress?: (count: number) => void
 ): Promise<CollectedPaper[]> {
   const papers: CollectedPaper[] = [];
-  const maxYear = yearTo ?? new Date().getFullYear();
-  const minYear = yearFrom ?? maxYear - 2;
+  const currentYear = new Date().getFullYear();
+  const maxYear = yearTo ?? currentYear;
+  const minYear = yearFrom ?? currentYear - 1; // Default to last 2 years
 
   const perPage = 100;
   let cursor = "*";
 
+  // Sort by publication_date descending to get newest papers first
   while (papers.length < limit) {
     const remaining = limit - papers.length;
     const fetchSize = Math.min(perPage, remaining);
@@ -117,7 +119,7 @@ export async function collectFromOpenAlex(
       `${BASE_URL}/works?search=${encodeURIComponent(topic)}` +
       `&filter=publication_year:${minYear}-${maxYear},type:article` +
       `&select=id,title,abstract_inverted_index,publication_year,publication_date,cited_by_count,doi,primary_location,authorships,keywords,concepts` +
-      `&per-page=${fetchSize}&cursor=${cursor}${EMAIL ? `&mailto=${EMAIL}` : ""}&sort=cited_by_count:desc`;
+      `&per-page=${fetchSize}&cursor=${cursor}${EMAIL ? `&mailto=${EMAIL}` : ""}&sort=publication_date:desc`;
 
     logger.info({ url, collected: papers.length }, "Fetching from OpenAlex");
 

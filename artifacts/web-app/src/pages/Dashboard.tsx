@@ -128,7 +128,7 @@ export default function Dashboard() {
 
             <div className="pt-2 min-h-[60vh]">
               {activeTab === "papers" && <PapersList topic={run.topic} runId={run.id} />}
-              {activeTab === "graph" && <CitationGraphView topic={run.topic} />}
+              {activeTab === "graph" && <CitationGraphView topic={run.topic} runId={run.id} />}
               {activeTab === "trends" && <TrendAnalysisView runId={run.id} />}
               {activeTab === "gaps" && <ResearchGapsView runId={run.id} onNavigate={navigateToTab} />}
               {activeTab === "proposals" && <ProposalsView runId={run.id} onNavigate={navigateToTab} />}

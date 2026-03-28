@@ -73,15 +73,20 @@ function PaperSummaryPanel({ paperId, onClose }: { paperId: string; onClose: () 
   );
 }
 
-export function CitationGraphView({ topic }: { topic: string }) {
-  const { data: papersData } = useListPapers({ topic, limit: 1, sortBy: "citationCount" });
+export function CitationGraphView({ topic, runId }: { topic: string; runId?: string }) {
+  const { data: papersData } = useListPapers({ runId, topic: runId ? undefined : topic, limit: 1, sortBy: "citationCount" });
   const seedId = papersData?.papers[0]?.id;
 
   const graphParams = { depth: 2, maxNodes: 200 };
   const { data: graphData, isLoading } = useGetCitationGraph(
     seedId || "",
     graphParams,
-    { query: { queryKey: getGetCitationGraphQueryKey(seedId || "", graphParams), enabled: !!seedId } }
+    { query: {
+      queryKey: getGetCitationGraphQueryKey(seedId || "", graphParams),
+      enabled: !!seedId,
+      staleTime: 5 * 60 * 1000, // Cache for 5 minutes since API fetch can be slow
+      gcTime: 10 * 60 * 1000,
+    } }
   );
 
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
@@ -249,7 +254,10 @@ export function CitationGraphView({ topic }: { topic: string }) {
       <div className="w-full h-[600px] flex items-center justify-center border border-border rounded bg-card relative overflow-hidden">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
-          <div className="font-mono text-sm text-muted-foreground">Building network graph…</div>
+          <div className="font-mono text-sm text-muted-foreground">Building citation network…</div>
+          <div className="font-mono text-xs text-muted-foreground/50 max-w-xs text-center">
+            Fetching citation relationships from academic APIs. This may take 30-60 seconds for the initial build.
+          </div>
         </div>
       </div>
     );
