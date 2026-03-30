@@ -15,7 +15,6 @@ node_modules
 /.idea
 .project
 .classpath
-.claude/
 .c9/
 *.launch
 .settings/
@@ -49,3 +48,7 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# AI
+.claude/
+CLAUDE.md
