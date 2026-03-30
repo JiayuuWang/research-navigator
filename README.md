@@ -16,6 +16,10 @@
 
 **Stack**: React 19 · Express 5 · PostgreSQL · Drizzle ORM · OpenAI API · Tailwind CSS v4 · Shadcn UI
 
+[Reflection During the Project](https://github.com/JiayuuWang/research-navigator/blob/master/REFLECTION.md) 
+
+[Iteration Handbook](https://github.com/JiayuuWang/research-navigator/blob/master/ITERATION.md)
+
 ### Features
 
 | Module | Description |
