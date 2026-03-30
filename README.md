@@ -20,6 +20,8 @@
 
 [Iteration Handbook](https://github.com/JiayuuWang/research-navigator/blob/master/ITERATION.md)
 
+[More Miscellaneous Feelings](https://jiayuuwang.github.io/vibe%20coding/%E6%8A%80%E6%9C%AF%E9%9D%A2%E8%AF%95/feelings-after-a-vibecoding-interview-cn/)
+
 ### Features
 
 | Module | Description |
